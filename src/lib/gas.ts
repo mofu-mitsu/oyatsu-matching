@@ -1,5 +1,5 @@
 export const sendResultToGAS = async (data: any) => {
-  const GAS_WEB_APP_URL = import.meta.env.VITE_GAS_URL || 'https://script.google.com/macros/s/AKfycbwAxi8BKAIJVZIM_Sl6m2z5sPv9oYhY1yruDhT-PqKfYcfIVAZT-ooqjHhJ5ELQUcmALQ/exec';
+  const GAS_WEB_APP_URL = (import.meta as any).env.VITE_GAS_URL || 'https://script.google.com/macros/s/AKfycbwAxi8BKAIJVZIM_Sl6m2z5sPv9oYhY1yruDhT-PqKfYcfIVAZT-ooqjHhJ5ELQUcmALQ/exec';
 
   if (!GAS_WEB_APP_URL) {
     console.log('GAS_WEB_APP_URL is not set. Skipping send to GAS.');

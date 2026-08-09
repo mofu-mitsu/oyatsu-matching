@@ -8,6 +8,7 @@ import { getRandomEyeContactMessage, getRandomJururiMessage } from '../data/rand
 import { MofumofuMascot } from './MofumofuMascot';
 import { Sparkles, ExternalLink, RefreshCw, ShoppingBag, Heart, Star, Sliders, Download, Share2 } from 'lucide-react';
 import { sendResultToGAS } from '../lib/gas';
+import { getFallbackItems } from '../data/fallbackItems';
 
 interface ResultViewProps {
   answers: QuizAnswers;
@@ -151,24 +152,27 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     customDis: string
   ) => {
     setLoading(true);
+    let mainKw = typeInfo.recommendedKeywords[0] || 'スイーツ';
+    let minP = 0;
+    let maxP = 0;
+    const allDislikes = [...dislikeList];
+    if (customDis.trim()) allDislikes.push(customDis.trim());
+
     try {
       // 検索キーワードの構築（再検索のたびに変わるようにランダムに選ぶ）
       const randomKwIndex = Math.floor(Math.random() * typeInfo.recommendedKeywords.length);
-      let mainKw = typeInfo.recommendedKeywords[randomKwIndex] || typeInfo.recommendedKeywords[0] || 'スイーツ';
+      mainKw = typeInfo.recommendedKeywords[randomKwIndex] || typeInfo.recommendedKeywords[0] || 'スイーツ';
 
       // モードがギフトの場合、キーワードをギフト向けに強化
       if (answers.mode === 'gift') {
         mainKw = `ギフト ${mainKw}`;
-        // アンリ・シャルパンティエなどの有名店を混ぜるのもアリ（ただし絞り込みすぎると出ないためOR検索などを考慮するか、単にギフトをつける）
       }
 
       // 気分（mood）によるキーワード強化
       if (answers.mode === 'self' && answers.mood) {
         if (answers.mood === 'ご褒美') mainKw = `高級 ${mainKw}`;
-        if (answers.mood === '夜食') mainKw = `おつまみ ${mainKw}`; // or 低カロリー
+        if (answers.mood === '夜食') mainKw = `おつまみ ${mainKw}`; 
       }
-
-      // フレーバーの付加はバックエンド側(server.ts)で行うためここでは行わない
 
       // カスタムキーワード指定があれば優先
       if (customSearchKeyword.trim()) {
@@ -176,17 +180,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       }
 
       // 予算計算
-      let minP = 0;
-      let maxP = 0;
       if (selectedBudget === '500') { minP = 0; maxP = 800; }
       else if (selectedBudget === '1000') { minP = 500; maxP = 1800; }
       else if (selectedBudget === '3000') { minP = 1500; maxP = 3800; }
       else if (selectedBudget === '5000') { minP = 3000; maxP = 6000; }
       else if (selectedBudget === '10000') { minP = 5000; maxP = 12000; }
 
-      // NGキーワード
-      const allDislikes = [...dislikeList];
-      if (customDis.trim()) allDislikes.push(customDis.trim());
 
       const params = new URLSearchParams({
         keyword: mainKw,
@@ -203,10 +202,16 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         setItems(data.items || []);
         setKeywordUsed(data.keywordUsed || mainKw);
       } else {
-        console.warn('楽天検索API呼び出し失敗');
+        const text = await res.text();
+        console.warn(`楽天検索API呼び出し失敗: Status=${res.status}, Text=${text}`);
+        throw new Error('API failed'); // catchブロックでフォールバックさせる
       }
     } catch (err) {
       console.error('Rakuten fetch error:', err);
+      console.log('フォールバックデータを使用します');
+      const fallbacks = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes);
+      setItems(fallbacks);
+      setKeywordUsed(mainKw + " (フォールバック)");
     } finally {
       setLoading(false);
     }
