@@ -6,12 +6,26 @@ import { ResultView } from './components/ResultView';
 import { QuickMatchView } from './components/QuickMatchView';
 import { EncyclopediaView } from './components/EncyclopediaView';
 import { QuizAnswers, QuizMode } from './types';
-import { Cookie, Heart, Sparkles } from 'lucide-react';
+import { Cookie, Heart, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { setVolume, getVolume, playSelectSound, playPopSound } from './lib/sound';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'home' | 'quiz' | 'quick' | 'encyclopedia'>('home');
   const [quizMode, setQuizMode] = useState<QuizMode>('self');
   const [answers, setAnswers] = useState<QuizAnswers | null>(null);
+  
+  const [isMuted, setIsMuted] = useState(true);
+  const toggleMute = () => {
+    if (isMuted) {
+      setVolume(0.5);
+      setIsMuted(false);
+      // AudioContext の resume は sound.ts 内で処理されるので、playPopSoundを呼ぶだけでOK
+      setTimeout(() => { playPopSound(); }, 10);
+    } else {
+      setVolume(0);
+      setIsMuted(true);
+    }
+  };
 
   const handleStartQuiz = (mode: QuizMode) => {
     setQuizMode(mode);
@@ -42,9 +56,23 @@ export default function App() {
         <Header
           activeTab={activeTab === 'home' ? 'quiz' : activeTab} // Headerにはhomeの表示はないのでquizとして扱う
           quizMode={quizMode}
-          setActiveTab={setActiveTab}
-          onStartQuiz={handleStartQuiz}
+          setActiveTab={(tab) => {
+            playPopSound();
+            setActiveTab(tab);
+          }}
+          onStartQuiz={(mode) => {
+            playSelectSound();
+            handleStartQuiz(mode);
+          }}
         />
+        
+        {/* 音量トグルボタン */}
+        <button
+          onClick={toggleMute}
+          className="fixed bottom-6 right-6 z-50 bg-white/90 backdrop-blur border border-stone-200 p-3 rounded-full shadow-lg text-stone-600 hover:text-rose-500 hover:scale-110 transition-all"
+        >
+          {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+        </button>
 
         {/* メインコンテンツ */}
         <main className="pb-12">

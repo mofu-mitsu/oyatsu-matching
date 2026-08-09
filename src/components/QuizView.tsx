@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { QuizAnswers, QuizMode } from '../types';
 import { SnackSlider } from './SnackSlider';
 import { Sparkles, ArrowRight, ArrowLeft, Check, Gift, Heart, PlusCircle, HelpCircle } from 'lucide-react';
+import { playPopSound, playSelectSound, playSparkleSound } from '../lib/sound';
 
 interface QuizViewProps {
   initialMode: QuizMode;
@@ -261,7 +262,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialMode, onComplete }) =
                     <button
                       key={t.label}
                       type="button"
-                      onClick={() => toggleTexture(t.label)}
+                      onClick={() => { playPopSound(); toggleTexture(t.label); }}
                       className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center gap-1 select-none ${
                         isSelected
                           ? 'bg-rose-50 border-rose-400 text-rose-700 shadow-sm font-bold scale-[1.02]'
@@ -370,7 +371,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialMode, onComplete }) =
               <div className="text-center space-y-1">
                 <span className="text-3xl">💰</span>
                 <h2 className="text-lg sm:text-xl font-extrabold text-stone-800">
-                  {mode === 'self' ? 'おやつのご予算＆今日の気分は？' : 'ギフトの予算＆お相手の雰囲気は？'}
+                  {mode === 'self' ? 'おやつに出せる金額＆今日の気分は？' : 'ギフトの予算＆お相手の雰囲気は？'}
                 </h2>
                 <p className="text-xs text-stone-500">
                   これで最後の質問！ぴったりなおやつを楽天APIから検索するよ✨

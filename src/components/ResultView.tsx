@@ -9,6 +9,7 @@ import { MofumofuMascot } from './MofumofuMascot';
 import { Sparkles, ExternalLink, RefreshCw, ShoppingBag, Heart, Star, Sliders, Download, Share2 } from 'lucide-react';
 import { sendResultToGAS } from '../lib/gas';
 import { getFallbackItems } from '../data/fallbackItems';
+import { playPopSound } from '../lib/sound';
 
 interface ResultViewProps {
   answers: QuizAnswers;
@@ -203,8 +204,13 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       const res = await fetch(`/api/rakuten/search?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setItems(data.items || []);
-        setKeywordUsed(data.keywordUsed || mainKw);
+        if (data.items && data.items.length > 0) {
+          setItems(data.items);
+          setKeywordUsed(data.keywordUsed || mainKw);
+        } else {
+          console.warn('API returned empty items');
+          throw new Error('Empty items');
+        }
       } else {
         const text = await res.text();
         console.warn(`楽天検索API呼び出し失敗: Status=${res.status}, Text=${text}`);
@@ -439,7 +445,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         </button>
         <button
           type="button"
-          onClick={handleShare}
+          onClick={() => { playPopSound(); handleShare(); }}
           disabled={isCapturing}
           className="bg-stone-800 hover:bg-stone-900 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-md shadow-stone-200 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50"
         >
@@ -651,7 +657,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
 
         <button
           type="button"
-          onClick={() => fetchRakutenItems(snackType, budget, answers.flavors, answers.dislikes, answers.customDislike)}
+          onClick={() => { playPopSound(); fetchRakutenItems(snackType, budget, answers.flavors, answers.dislikes, answers.customDislike); }}
           className="w-full py-3 rounded-2xl bg-stone-800 text-white font-extrabold text-sm hover:bg-stone-900 transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
           id="re-search-submit"
         >
@@ -664,7 +670,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       <div className="pt-6 pb-12 flex justify-center border-t border-stone-200">
         <button
           type="button"
-          onClick={onReset}
+          onClick={() => { playPopSound(); onReset(); }}
           className="group relative px-6 py-3 bg-gradient-to-br from-rose-500 to-pink-600 text-white font-extrabold rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 active:scale-95 flex items-center gap-2"
           id="re-quiz-primary-button"
         >
