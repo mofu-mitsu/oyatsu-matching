@@ -7,7 +7,7 @@ import { QuickMatchView } from './components/QuickMatchView';
 import { EncyclopediaView } from './components/EncyclopediaView';
 import { QuizAnswers, QuizMode } from './types';
 import { Cookie, Heart, Sparkles, Volume2, VolumeX } from 'lucide-react';
-import { setVolume, getVolume, playSelectSound, playPopSound } from './lib/sound';
+import { setVolume, getVolume, playSelectSound, playPopSound, playSparkleSound } from './lib/sound';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'home' | 'quiz' | 'quick' | 'encyclopedia'>('home');
@@ -28,16 +28,19 @@ export default function App() {
   };
 
   const handleStartQuiz = (mode: QuizMode) => {
+    playPopSound();
     setQuizMode(mode);
     setAnswers(null);
     setActiveTab('quiz');
   };
 
   const handleQuizComplete = (completedAnswers: QuizAnswers) => {
+    playSparkleSound();
     setAnswers(completedAnswers);
   };
 
   const handleReset = () => {
+    playPopSound();
     setAnswers(null);
   };
 

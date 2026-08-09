@@ -1,4 +1,6 @@
-const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+const fs = require('fs');
+
+let code = `const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
 
 if (typeof (window as any).__masterVolume === 'undefined') {
   (window as any).__masterVolume = 0; // 最初はオフ（ミュート）
@@ -99,3 +101,6 @@ export const playSparkleSound = () => {
 
   playWithResume(play);
 };
+`;
+
+fs.writeFileSync('src/lib/sound.ts', code);

@@ -82,6 +82,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialMode, onComplete }) =
   };
 
   const handleNext = () => {
+    playPopSound();
     if (step < totalSteps) {
       setStep(step + 1);
     } else {
@@ -104,6 +105,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialMode, onComplete }) =
   };
 
   const handleBack = () => {
+    playPopSound();
     if (step > 1) {
       setStep(step - 1);
     }
@@ -299,7 +301,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialMode, onComplete }) =
                     <button
                       key={flavor}
                       type="button"
-                      onClick={() => toggleFlavor(flavor)}
+                      onClick={() => { playPopSound(); toggleFlavor(flavor); }}
                       className={`px-3.5 py-2 rounded-2xl border text-xs font-bold transition-all select-none ${
                         isSelected
                           ? 'bg-amber-100 border-amber-400 text-amber-900 shadow-sm scale-105'
@@ -334,7 +336,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialMode, onComplete }) =
                     <button
                       key={dislike}
                       type="button"
-                      onClick={() => toggleDislike(dislike)}
+                      onClick={() => { playPopSound(); toggleDislike(dislike); }}
                       className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all select-none ${
                         isSelected
                           ? 'bg-stone-800 border-stone-900 text-white shadow-sm font-bold'
@@ -393,7 +395,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialMode, onComplete }) =
                     <button
                       key={b.val}
                       type="button"
-                      onClick={() => setBudget(b.val as any)}
+                      onClick={() => { playPopSound(); setBudget(b.val as any); }}
                       className={`p-2.5 rounded-xl border text-xs font-bold transition-all text-center ${
                         budget === b.val
                           ? 'bg-rose-500 border-rose-600 text-white shadow-md'
@@ -421,7 +423,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialMode, onComplete }) =
                       <button
                         key={m.id}
                         type="button"
-                        onClick={() => setMood(m.id)}
+                        onClick={() => { playPopSound(); setMood(m.id); }}
                         className={`p-2.5 rounded-xl border text-xs font-bold transition-all text-left ${
                           mood === m.id
                             ? 'bg-amber-100 border-amber-400 text-amber-900 shadow-sm'
@@ -442,7 +444,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialMode, onComplete }) =
                         <button
                           key={target}
                           type="button"
-                          onClick={() => setGiftTarget(target)}
+                          onClick={() => { playPopSound(); setGiftTarget(target); }}
                           className={`p-2 rounded-xl border text-xs font-bold transition-all ${
                             giftTarget === target
                               ? 'bg-amber-500 border-amber-600 text-white shadow-sm'
@@ -462,7 +464,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialMode, onComplete }) =
                         <button
                           key={vibe}
                           type="button"
-                          onClick={() => setGiftVibe(vibe)}
+                          onClick={() => { playPopSound(); setGiftVibe(vibe); }}
                           className={`p-2 rounded-xl border text-xs font-bold transition-all ${
                             giftVibe === vibe
                               ? 'bg-rose-500 border-rose-600 text-white shadow-sm'

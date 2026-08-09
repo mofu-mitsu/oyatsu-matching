@@ -59,15 +59,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const apiUrl = `https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701?${params.toString()}`;
 
-      const headers: any = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' };
+      const headers: Record<string, string> = { 
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Referer': 'https://oyatsu-matching.vercel.app/',
+        'Origin': 'https://oyatsu-matching.vercel.app',
+      };
+
       if (RAKUTEN_ACCESS_KEY) {
         headers['accessKey'] = RAKUTEN_ACCESS_KEY;
       }
 
-      const response = await fetch(apiUrl, { headers });
+      let response = await fetch(apiUrl, { headers });
+      
+      // 429 Too Many Requests の場合は 1秒待機してもう1回だけリトライする
+      if (!response.ok && response.status === 429) {
+        console.warn('⚠️ 429 Rate Limit Exceeded. Waiting for 1000ms...');
+        await new Promise(resolve => setTimeout(resolve, 1050));
+        response = await fetch(apiUrl, { headers });
+      }
+      
+      // ループの次のイテレーションに備えて、連続でリクエストしないように1000ms待機
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1050));
+      }
 
       if (!response.ok) {
-        console.warn(`⚠️ 楽天APIエラー (${response.status})`);
+        const errorText = await response.text();
+      
+        console.error(
+         `⚠️ 楽天APIエラー (${response.status}): ${errorText}`
+        );
+      
         fallbackNeeded = true;
         break;
       }
