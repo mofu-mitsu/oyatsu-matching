@@ -59,10 +59,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const apiUrl = `https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701?${params.toString()}`;
 
-      const headers: any = { 
+      const headers: Record<string, string> = { 
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        'Referer': req.headers.referer || 'https://oyatsu-matching.vercel.app/'
+        'Referer': 'https://oyatsu-matching.vercel.app/',
+        'Origin': 'https://oyatsu-matching.vercel.app',
       };
+
       if (RAKUTEN_ACCESS_KEY) {
         headers['accessKey'] = RAKUTEN_ACCESS_KEY;
       }
