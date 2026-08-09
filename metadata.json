@@ -1,0 +1,6 @@
+{
+  "name": "おやつ16タイプ診断 - おやつマッチング",
+  "description": "あなたにぴったりのおやつが見つかる16タイプ診断＆楽天APIでおやつをお迎えできるマニアックで可愛いスイーツ提案アプリ",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

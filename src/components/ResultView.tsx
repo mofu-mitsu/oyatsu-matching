@@ -1,0 +1,669 @@
+import React, { useEffect, useState } from 'react';
+import confetti from 'canvas-confetti';
+import { toPng } from 'html-to-image';
+import { QuizAnswers, RakutenItem, SnackTypeInfo } from '../types';
+import { SnackCharacterAvatar } from './SnackCharacterAvatar';
+import { calculateSnackType, SNACK_TYPES } from '../data/snackTypes';
+import { getRandomEyeContactMessage, getRandomJururiMessage } from '../data/randomMessages';
+import { MofumofuMascot } from './MofumofuMascot';
+import { Sparkles, ExternalLink, RefreshCw, ShoppingBag, Heart, Star, Sliders, Download, Share2 } from 'lucide-react';
+import { sendResultToGAS } from '../lib/gas';
+
+interface ResultViewProps {
+  answers: QuizAnswers;
+  onReset: () => void;
+}
+
+const ParameterBar = ({ leftLabel, rightLabel, value, colorClass }: { leftLabel: string, rightLabel: string, value: number, colorClass: string }) => {
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-[10px] font-bold text-stone-600 px-1">
+        <span className={value <= 50 ? 'text-stone-800' : ''}>{leftLabel} {100 - value}%</span>
+        <span className={value > 50 ? 'text-stone-800' : ''}>{rightLabel} {value}%</span>
+      </div>
+      <div className="h-2 w-full bg-stone-100 rounded-full overflow-hidden relative border border-stone-200">
+        <div 
+          className={`absolute top-0 left-0 h-full ${colorClass} rounded-full transition-all duration-1000 ease-out`} 
+          style={{ width: `${value}%` }}
+        />
+        <div className="absolute top-0 left-1/2 w-px h-full bg-stone-300 z-10" />
+      </div>
+    </div>
+  );
+};
+
+export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
+  const [snackType, setSnackType] = useState<SnackTypeInfo | null>(null);
+  const [items, setItems] = useState<RakutenItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [keywordUsed, setKeywordUsed] = useState<string>('');
+  const [isCapturing, setIsCapturing] = useState<boolean>(false);
+
+  // 演出用ステート
+  const [eyeContactMsg, setEyeContactMsg] = useState<string>('');
+  const [jururiMsg, setJururiMsg] = useState<string>('');
+
+  // ボタン文言カスタマイズ
+  const [buttonStyle, setButtonStyle] = useState<string>('お迎えする');
+
+  // 条件の再調整用
+  const [budget, setBudget] = useState<string>(answers.budget);
+  const [customSearchKeyword, setCustomSearchKeyword] = useState<string>('');
+  
+  const [isPureLSI, setIsPureLSI] = useState<boolean>(false);
+  const [alternateType, setAlternateType] = useState<SnackTypeInfo | null>(null);
+
+  useEffect(() => {
+    // tenderスコアの計算
+    const tenderCount = answers.textures.filter(t => ['ふわふわ', 'もっちり', 'とろとろ', 'ほろほろ'].includes(t)).length;
+    const hardCount = answers.textures.filter(t => ['サクサク', 'ザクザク', 'カリカリ', 'パリパリ'].includes(t)).length;
+    
+    let tenderScore = 50;
+    if (tenderCount > hardCount) tenderScore = 80;
+    if (hardCount > tenderCount) tenderScore = 20;
+
+    // 診断結果の計算
+    let resultType = calculateSnackType(
+      answers.sweetValue,
+      tenderScore,
+      answers.freshValue,
+      answers.japaneseValue
+    );
+
+    // LSI芋虫の特別処理 (YTCJ: ごまどうふ, YHCJ: クール枝豆)
+    let pureLSI = false;
+    if ((resultType.code === 'YTCJ' || resultType.code === 'YHCJ') && !answers.isQuickMatch) {
+      const isTie = answers.sweetValue === 50 || tenderScore === 50 || answers.freshValue === 50 || answers.japaneseValue === 50;
+      if (isTie) {
+        // 半々の場合は別のタイプに寄せる (S:甘い, W:洋風 などに変更)
+        const newSweet = answers.sweetValue === 50 ? 51 : answers.sweetValue; // Y -> S
+        const newJapanese = answers.japaneseValue === 50 ? 51 : answers.japaneseValue; // J -> W
+        const newTender = tenderScore === 50 ? 51 : tenderScore;
+        const newFresh = answers.freshValue === 50 ? 49 : answers.freshValue; // C -> F
+        resultType = calculateSnackType(newSweet, newTender, newFresh, newJapanese);
+      } else {
+        pureLSI = true;
+      }
+    }
+    
+    // 半々の要素がある場合、もう1つのタイプ（裏タイプ）を計算
+    let altType: SnackTypeInfo | null = null;
+    if (answers.japaneseValue === 50) {
+       // 和洋が半々
+       const altJ = resultType.code.endsWith('J') ? 100 : 0;
+       altType = calculateSnackType(answers.sweetValue, tenderScore, answers.freshValue, altJ);
+    } else if (answers.sweetValue === 50) {
+       // 甘辛が半々
+       const altS = resultType.code.startsWith('S') ? 0 : 100;
+       altType = calculateSnackType(altS, tenderScore, answers.freshValue, answers.japaneseValue);
+    } else if (answers.freshValue === 50) {
+       // 温度感が半々
+       const altF = resultType.code[2] === 'F' ? 100 : 0;
+       altType = calculateSnackType(answers.sweetValue, tenderScore, altF, answers.japaneseValue);
+    }
+    
+    // LSI回避などで同一になった場合は無効化
+    if (altType && altType.code === resultType.code) {
+      altType = null;
+    }
+
+    setIsPureLSI(pureLSI);
+    setSnackType(resultType);
+    setAlternateType(altType);
+
+    // ランダム演出メッセージのセット
+    setEyeContactMsg(getRandomEyeContactMessage());
+    setJururiMsg(getRandomJururiMessage());
+
+    // 紙吹雪演出
+    try {
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#f472b6', '#fbbf24', '#34d399', '#60a5fa'],
+      });
+    } catch (e) {
+      console.warn('confetti trigger failed:', e);
+    }
+
+    // 楽天API呼び出し
+    fetchRakutenItems(resultType, answers.budget, answers.flavors, answers.dislikes, answers.customDislike);
+
+    // GASに診断結果を送信（初回マウント/診断完了時）
+    sendResultToGAS({
+      mode: answers.mode,
+      typeCode: resultType.code,
+      typeName: resultType.title,
+      answers: answers,
+      budget: answers.budget,
+      flavors: answers.flavors,
+      keywordUsed: resultType.recommendedKeywords[0],
+    });
+  }, [answers]);
+
+  // 楽天APIデータ取得関数
+  const fetchRakutenItems = async (
+    typeInfo: SnackTypeInfo,
+    selectedBudget: string,
+    flavors: string[],
+    dislikeList: string[],
+    customDis: string
+  ) => {
+    setLoading(true);
+    try {
+      // 検索キーワードの構築（再検索のたびに変わるようにランダムに選ぶ）
+      const randomKwIndex = Math.floor(Math.random() * typeInfo.recommendedKeywords.length);
+      let mainKw = typeInfo.recommendedKeywords[randomKwIndex] || typeInfo.recommendedKeywords[0] || 'スイーツ';
+
+      // モードがギフトの場合、キーワードをギフト向けに強化
+      if (answers.mode === 'gift') {
+        mainKw = `ギフト ${mainKw}`;
+        // アンリ・シャルパンティエなどの有名店を混ぜるのもアリ（ただし絞り込みすぎると出ないためOR検索などを考慮するか、単にギフトをつける）
+      }
+
+      // 気分（mood）によるキーワード強化
+      if (answers.mode === 'self' && answers.mood) {
+        if (answers.mood === 'ご褒美') mainKw = `高級 ${mainKw}`;
+        if (answers.mood === '夜食') mainKw = `おつまみ ${mainKw}`; // or 低カロリー
+      }
+
+      // フレーバーの付加はバックエンド側(server.ts)で行うためここでは行わない
+
+      // カスタムキーワード指定があれば優先
+      if (customSearchKeyword.trim()) {
+        mainKw = customSearchKeyword.trim();
+      }
+
+      // 予算計算
+      let minP = 0;
+      let maxP = 0;
+      if (selectedBudget === '500') { minP = 0; maxP = 800; }
+      else if (selectedBudget === '1000') { minP = 500; maxP = 1800; }
+      else if (selectedBudget === '3000') { minP = 1500; maxP = 3800; }
+      else if (selectedBudget === '5000') { minP = 3000; maxP = 6000; }
+      else if (selectedBudget === '10000') { minP = 5000; maxP = 12000; }
+
+      // NGキーワード
+      const allDislikes = [...dislikeList];
+      if (customDis.trim()) allDislikes.push(customDis.trim());
+
+      const params = new URLSearchParams({
+        keyword: mainKw,
+        typeCode: typeInfo.id,
+      });
+      if (minP > 0) params.append('minPrice', String(minP));
+      if (maxP > 0) params.append('maxPrice', String(maxP));
+      if (flavors.length > 0) params.append('flavors', flavors.join(','));
+      if (allDislikes.length > 0) params.append('dislikes', allDislikes.join(','));
+
+      const res = await fetch(`/api/rakuten/search?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setItems(data.items || []);
+        setKeywordUsed(data.keywordUsed || mainKw);
+      } else {
+        console.warn('楽天検索API呼び出し失敗');
+      }
+    } catch (err) {
+      console.error('Rakuten fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveImage = async () => {
+    if (!snackType) return;
+    const node = document.getElementById('snack-result-card');
+    if (!node) return;
+    
+    setIsCapturing(true);
+    try {
+      // html-to-image で oklab エラーを回避するため、背景色などを指定
+      const dataUrl = await toPng(node, {
+        quality: 0.95,
+        backgroundColor: '#ffffff',
+        pixelRatio: 2, // 高画質化
+      });
+      const link = document.createElement('a');
+      link.download = `oyatsu-shindan-${snackType.code}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('画像保存に失敗しました:', err);
+      alert('画像の保存に失敗しちゃいました💦');
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!snackType) return;
+    const node = document.getElementById('snack-result-card');
+    if (!node) return;
+
+    setIsCapturing(true);
+    try {
+      const dataUrl = await toPng(node, {
+        quality: 0.95,
+        backgroundColor: '#ffffff',
+        pixelRatio: 2,
+      });
+      
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], `oyatsu-${snackType.code}.png`, { type: 'image/png' });
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: '私のおやつ性格診断結果！',
+          text: `私の診断結果は「${snackType.title}」でした！\n\n#16タイプおやつ診断`,
+          files: [file],
+        });
+      } else {
+        // シェア非対応の場合はフォールバックとして保存
+        const link = document.createElement('a');
+        link.download = `oyatsu-${snackType.code}.png`;
+        link.href = dataUrl;
+        link.click();
+        alert('お使いのブラウザは画像シェアに対応していないため、画像を保存しました！SNSでシェアしてみてね✨');
+      }
+    } catch (err) {
+      console.error('シェアに失敗しました:', err);
+      alert('シェア機能の呼び出しに失敗しちゃいました💦');
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  // パラメータバー用
+  const tenderCount = answers.textures.filter(t => ['ふわふわ', 'もっちり', 'とろとろ', 'ほろほろ'].includes(t)).length;
+  const hardCount = answers.textures.filter(t => ['サクサク', 'ザクザク', 'カリカリ', 'パリパリ'].includes(t)).length;
+  let renderTenderScore = 50;
+  if (tenderCount > hardCount) renderTenderScore = 80;
+  if (hardCount > tenderCount) renderTenderScore = 20;
+
+  if (!snackType) return null;
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-6 space-y-8" id="result-container">
+      {isPureLSI && (
+        <div className="bg-rose-100 border-2 border-rose-500 rounded-3xl p-6 shadow-lg animate-pulse">
+          <h2 className="text-xl sm:text-2xl font-black text-rose-800 flex items-center gap-2 mb-3">
+            <span className="text-2xl">🚨</span>
+            【警告】あなたは人類全体の約0.1%「おやつ界の異端児（LSI芋虫）」です！
+            <span className="text-2xl">🐛</span>
+          </h2>
+          <p className="text-sm sm:text-base font-bold text-rose-900 leading-relaxed bg-white/60 p-4 rounded-2xl">
+            3時のおやつに甘いケーキやプリンを求める軟弱な思想を完全に切り捨て、冷やし豆腐や枝豆、スパイシー珍味で淡々と物理塩分補給を行う超ストイックなレアタイプ！<br/>
+            一般的なおやつ売り場ではあなたを満足させられないため、当ツールは特別に<strong>「居酒屋のスピードメニュー＆絶品小鉢データベース」</strong>から極上のおやつを召喚しました。誇りを持って冷や奴をお迎えしてください。
+          </p>
+        </div>
+      )}
+
+      {/* 診断タイプ発表カード */}
+      <div className={`rounded-3xl p-6 sm:p-8 border ${snackType.color.border} ${snackType.color.bg} shadow-xl relative overflow-hidden`} id="snack-result-card">
+        {isCapturing && (
+          <div className="absolute top-4 right-4 text-[10px] font-bold text-stone-400 bg-white/80 px-2 py-1 rounded-full">
+            16タイプおやつ診断
+          </div>
+        )}
+        <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10">
+          <div className="flex flex-col items-center">
+            <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-white/95 shadow-md border-2 border-amber-200 flex items-center justify-center p-2 flex-shrink-0 animate-bounce duration-1000 relative">
+              <SnackCharacterAvatar typeId={snackType.id} size="lg" />
+            </div>
+            <span className="text-xs font-black text-amber-900 mt-2 bg-amber-100/90 px-3 py-1 rounded-full border border-amber-300 shadow-2xs">
+              {snackType.characterEmoji} {snackType.characterName}
+            </span>
+          </div>
+
+          <div className="space-y-2 text-center sm:text-left flex-1">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <span className={`text-xs font-extrabold px-3 py-1 rounded-full ${snackType.color.badge}`}>
+                TYPE: {snackType.code}
+              </span>
+              <span className="text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-200">
+                キャラクター: {snackType.characterName}
+              </span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-black text-stone-900 leading-tight">
+              {snackType.title}
+            </h1>
+
+            <p className="text-xs sm:text-sm font-extrabold text-rose-600">
+              おすすめカテゴリ: {snackType.snackCategory}
+            </p>
+
+            <p className="text-xs sm:text-sm text-stone-700 font-medium italic bg-white/70 p-3 rounded-2xl border border-stone-200/60 mt-2">
+              「{snackType.catchphrase}」
+            </p>
+          </div>
+        </div>
+
+        {/* 解説と性格的特徴 */}
+        <div className="mt-6 pt-6 border-t border-stone-200/60 grid sm:grid-cols-2 gap-4 text-xs text-stone-700">
+          <div className="space-y-2">
+            <h3 className="font-extrabold text-stone-900 flex items-center gap-1">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>おやつ性格プロファイル</span>
+            </h3>
+            <p className="leading-relaxed bg-white/60 p-3 rounded-xl">
+              {answers.mode === 'gift' ? snackType.description.replace(/あなた/g, 'あの人') : snackType.description}
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <h3 className="font-extrabold text-stone-900 flex items-center gap-1">
+                <Heart className="w-4 h-4 text-rose-500" />
+                <span>{answers.mode === 'gift' ? 'このおやつが似合う人の特徴' : 'あなたの特徴＆相性'}</span>
+              </h3>
+              <div className="flex flex-wrap gap-1.5">
+                {snackType.personalityTraits.map((trait) => (
+                  <span key={trait} className="bg-white/90 text-stone-800 font-bold px-2.5 py-1 rounded-xl border border-stone-200 shadow-2xs">
+                    ✨ {trait}
+                  </span>
+                ))}
+              </div>
+            </div>
+            
+            {answers.mode !== 'gift' && (
+              <div className="bg-white/70 p-3 rounded-xl border border-stone-200/60">
+                <p className="font-bold text-stone-800 mb-1">🤝 ベスト相性タイプ</p>
+                <p className="font-extrabold text-rose-600">
+                  {snackType.bestPairingTypeId} ({SNACK_TYPES[snackType.bestPairingTypeId]?.title})
+                </p>
+              </div>
+            )}
+
+            {alternateType && (
+              <div className="bg-amber-50 p-3 rounded-xl border border-amber-200">
+                <p className="font-bold text-amber-900 mb-1 flex items-center gap-1">
+                  <span>🎭</span> 【裏タイプ】
+                </p>
+                <p className="text-xs text-amber-800 leading-tight mb-2">
+                  回答が半々で迷ったあなたには、こちらのタイプも潜んでいます。
+                </p>
+                <div className="flex items-center gap-3 bg-white/60 p-2 rounded-lg">
+                  <div className="w-12 h-12 flex-shrink-0">
+                    <SnackCharacterAvatar typeId={alternateType.id} size="sm" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                      {alternateType.code}
+                    </span>
+                    <p className="text-xs font-extrabold text-stone-800">{alternateType.title}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 診断パラメータ分析 */}
+        <div className="mt-4 pt-6 border-t border-stone-200/60">
+          <h3 className="font-extrabold text-stone-900 flex items-center gap-1 mb-4 text-xs">
+            <Sliders className="w-4 h-4 text-sky-500" />
+            <span>おやつパラメータ分析</span>
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+            <ParameterBar leftLabel="🍘 しょっぱい" rightLabel="甘い 🍫" value={answers.sweetValue} colorClass="bg-gradient-to-r from-orange-400 to-rose-400" />
+            <ParameterBar leftLabel="🥨 硬い" rightLabel="柔らかい 🥞" value={renderTenderScore} colorClass="bg-gradient-to-r from-amber-500 to-yellow-300" />
+            <ParameterBar leftLabel="🍪 常温" rightLabel="ひんやり 🧊" value={answers.freshValue} colorClass="bg-gradient-to-r from-amber-600 to-sky-400" />
+            <ParameterBar leftLabel="🍵 和風" rightLabel="洋風 🍰" value={answers.japaneseValue} colorClass="bg-gradient-to-r from-emerald-500 to-pink-400" />
+          </div>
+        </div>
+
+      </div>
+
+      {/* シェア・保存ボタン群 */}
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <button
+          type="button"
+          onClick={handleSaveImage}
+          disabled={isCapturing}
+          className="bg-white hover:bg-stone-50 text-stone-700 border border-stone-200 font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
+        >
+          <Download className="w-4 h-4" />
+          <span>画像を保存する</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleShare}
+          disabled={isCapturing}
+          className="bg-stone-800 hover:bg-stone-900 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-md shadow-stone-200 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50"
+        >
+          <Share2 className="w-4 h-4" />
+          <span>結果をシェアする</span>
+        </button>
+      </div>
+
+      {/* 「おやつがこちらを見ています…👀✨」＆ もふもふマスコット演出 */}
+      <div className="space-y-3" id="eye-contact-section">
+        <MofumofuMascot
+          message={jururiMsg}
+          mood="jururi"
+          character="hamster"
+          size="md"
+        />
+
+        {/* おやつの視線メッセージ */}
+        <div className="bg-gradient-to-r from-amber-100/90 via-pink-100/90 to-rose-100/90 p-4 rounded-3xl border border-amber-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl animate-bounce">👀✨</span>
+            <div>
+              <span className="text-[10px] font-extrabold text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-full">
+                おやつの囁き
+              </span>
+              <p className="text-xs sm:text-sm font-extrabold text-stone-800 mt-0.5">
+                {eyeContactMsg}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setEyeContactMsg(getRandomEyeContactMessage())}
+            className="text-[11px] font-bold text-stone-600 bg-white/80 hover:bg-white px-3 py-1.5 rounded-xl border border-stone-200 transition-all flex items-center gap-1 flex-shrink-0"
+            id="change-eye-contact-msg-btn"
+          >
+            <RefreshCw className="w-3 h-3" />
+            <span>別の囁きを聞く</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 楽天市場から召喚されたおやつ商品一覧 */}
+      <div className="space-y-4" id="rakuten-products-section">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-stone-200 pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-rose-500" />
+              <h2 className="text-lg font-extrabold text-stone-900">
+                {answers.mode === 'gift' ? 'あの人にぴったりのおやつを召喚しました！' : 'あなたにぴったりのおやつを召喚しました！'}
+              </h2>
+            </div>
+            <p className="text-xs text-stone-500">
+              楽天市場から条件に合ったおすすめおやつを検索中 (キーワード: 「{keywordUsed}」)
+            </p>
+          </div>
+
+          {/* ボタンの文言切替カスタム */}
+          <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-2xl border text-xs">
+            <span className="text-[10px] text-stone-500 font-bold px-1">ボタン文言:</span>
+            {[
+              { id: 'お迎えする', label: 'お迎えする' },
+              { id: '召喚する', label: '召喚する' },
+              { id: '見に行く', label: '見に行く' },
+              { id: '召し上がる', label: '召し上がる' },
+            ].map((btn) => (
+              <button
+                key={btn.id}
+                type="button"
+                onClick={() => setButtonStyle(btn.id)}
+                className={`px-2 py-1 rounded-xl text-[10px] font-bold transition-all ${
+                  buttonStyle === btn.id ? 'bg-white text-rose-600 shadow-2xs' : 'text-stone-600'
+                }`}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ローディング表示 */}
+        {loading ? (
+          <div className="py-12 text-center space-y-3">
+            <div className="w-10 h-10 border-4 border-pink-400 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs font-bold text-stone-600">
+              楽天市場からおやつを捜索中……🤤 少々お待ちを！
+            </p>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="bg-amber-50 p-6 rounded-3xl border border-amber-200 text-center space-y-2">
+            <p className="text-sm font-bold text-amber-900">
+              えへへ、ぴったりのおやつを探し中だよ！
+            </p>
+            <p className="text-xs text-stone-600">
+              キーワードを少し変えるか、予算を広げて再検索してみてね！
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+            {items.map((item, idx) => (
+              <div
+                key={idx}
+                className="bg-white rounded-3xl border border-pink-100 shadow-sm hover:shadow-md transition-all p-4 flex flex-col justify-between group relative overflow-hidden"
+              >
+                {/* じゅるり吹き出し装飾 (最初のカードのみ) */}
+                {idx === 0 && (
+                  <div className="absolute top-2 right-2 bg-amber-400 text-amber-950 font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-2xs animate-pulse z-10">
+                    一番おすすめ！🤤
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  {/* 商品画像 */}
+                  <div className="w-full h-44 rounded-2xl overflow-hidden bg-stone-100 relative">
+                    <img
+                      src={item.imageUrl || 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400'}
+                      alt={item.itemName}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+
+                  {/* 商品名 */}
+                  <h3 className="text-xs font-bold text-stone-900 line-clamp-2 leading-snug group-hover:text-rose-600 transition-colors">
+                    {item.itemName}
+                  </h3>
+
+                  {/* レビュー＆価格 */}
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-stone-100">
+                    <div className="flex items-center gap-1 text-amber-500 font-bold">
+                      <Star className="w-3.5 h-3.5 fill-amber-400" />
+                      <span>{item.reviewAverage > 0 ? item.reviewAverage.toFixed(1) : '4.5'}</span>
+                      <span className="text-[10px] text-stone-400">({item.reviewCount || 12})</span>
+                    </div>
+
+                    <div className="text-sm font-black text-rose-600">
+                      ¥{item.itemPrice.toLocaleString()}
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-stone-400 truncate">
+                    ショップ: {item.shopName}
+                  </p>
+                </div>
+
+                {/* お迎えボタン */}
+                <a
+                  href={item.affiliateUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 w-full py-2.5 px-3 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 text-white font-extrabold text-xs shadow-md shadow-pink-100 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                  id={`rakuten-item-btn-${idx}`}
+                >
+                  <span>
+                    {buttonStyle === 'お迎えする' && '✨ このおやつをお迎えする'}
+                    {buttonStyle === '召喚する' && '🍩 このおやつを召喚する'}
+                    {buttonStyle === '見に行く' && '🍓 このおやつを見に行く'}
+                    {buttonStyle === '召し上がる' && '👉 楽天市場で今すぐ召し上がる'}
+                  </span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 絞り込み条件の再調整パネル */}
+      <div className="bg-stone-50 rounded-3xl p-6 border border-stone-200 space-y-4 shadow-sm" id="search-adjust-panel">
+        <div className="flex flex-col space-y-2">
+          <div className="flex items-center gap-1.5 font-extrabold text-sm text-stone-800">
+            <Sliders className="w-4 h-4 text-stone-500" />
+            <span>おやつ検索条件を微調整する</span>
+          </div>
+          <p className="text-xs text-stone-500 font-medium">結果がイマイチな場合は、追加キーワードや予算を調整して再検索してみてね！</p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-stone-600">追加キーワード:</label>
+            <input
+              type="text"
+              value={customSearchKeyword}
+              onChange={(e) => setCustomSearchKeyword(e.target.value)}
+              placeholder="例: 北海道 バターサンド, 抹茶 タルト"
+              className="w-full px-4 py-2 rounded-xl border border-stone-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-rose-400 shadow-2xs transition-shadow"
+              id="custom-search-input"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-stone-600">予算調整:</label>
+            <select
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+              className="w-full px-4 py-2 rounded-xl border border-stone-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-rose-400 shadow-2xs transition-shadow"
+              id="budget-adjust-select"
+            >
+              <option value="500">500円以下</option>
+              <option value="1000">1,000円以下</option>
+              <option value="3000">3,000円以下</option>
+              <option value="5000">5,000円以下</option>
+              <option value="10000">10,000円以下</option>
+              <option value="any">気にしない</option>
+            </select>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => fetchRakutenItems(snackType, budget, answers.flavors, answers.dislikes, answers.customDislike)}
+          className="w-full py-3 rounded-2xl bg-stone-800 text-white font-extrabold text-sm hover:bg-stone-900 transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+          id="re-search-submit"
+        >
+          <RefreshCw className="w-4 h-4" />
+          <span>条件を更新しておやつを再捜索する</span>
+        </button>
+      </div>
+
+      {/* 最初からやり直すボタン（目立たせる） */}
+      <div className="pt-6 pb-12 flex justify-center border-t border-stone-200">
+        <button
+          type="button"
+          onClick={onReset}
+          className="group relative px-6 py-3 bg-gradient-to-br from-rose-500 to-pink-600 text-white font-extrabold rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 active:scale-95 flex items-center gap-2"
+          id="re-quiz-primary-button"
+        >
+          <div className="absolute inset-0 rounded-2xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <RefreshCw className="w-5 h-5" />
+          <span className="text-sm">最初から診断し直す！✨</span>
+        </button>
+      </div>
+    </div>
+  );
+};

@@ -1,0 +1,53 @@
+function doPost(e) {
+  // CORS対応用のレスポンスヘッダー設定（今回は no-cors モードなので基本的に読めませんが念の為）
+  const headers = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
+  
+  // JSONデータをパース
+  let data = {};
+  if (e && e.postData && e.postData.contents) {
+    try {
+      data = JSON.parse(e.postData.contents);
+    } catch(err) {
+      console.error(err);
+    }
+  }
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  
+  // ヘッダーがなければ追加
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["タイムスタンプ", "モード", "タイプコード", "タイプ名", "予算", "フレーバー", "使用キーワード", "甘さスコア", "和洋スコア", "常温・ひんやりスコア"]);
+  }
+
+  // 行を追加
+  sheet.appendRow([
+    new Date(),
+    data.mode || "",
+    data.typeCode || "",
+    data.typeName || "",
+    data.budget || "",
+    (data.flavors || []).join(", "),
+    data.keywordUsed || "",
+    data.answers ? data.answers.sweetValue : "",
+    data.answers ? data.answers.japaneseValue : "",
+    data.answers ? data.answers.freshValue : ""
+  ]);
+
+  return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeaders(headers);
+}
+
+function doOptions(e) {
+  const headers = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
+  return ContentService.createTextOutput("")
+    .setHeaders(headers);
+}
