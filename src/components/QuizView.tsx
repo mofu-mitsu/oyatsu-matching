@@ -42,7 +42,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialMode, onComplete }) =
 
   // フォームデータ
   const [sweetValue, setSweetValue] = useState<number>(75); // デフォルト甘い寄り
-  const [japaneseValue, setJapaneseValue] = useState<number>(50); // 中間
+  const [japaneseValue, setJapaneseValue] = useState<number>(75); // 洋風寄りに変更
   const [freshValue, setFreshValue] = useState<number>(30); // 焼き菓子/常温寄り
   const [textures, setTextures] = useState<string[]>(['サクサク', 'ふわふわ']);
   const [flavors, setFlavors] = useState<string[]>(['チョコ', 'いちご']);
