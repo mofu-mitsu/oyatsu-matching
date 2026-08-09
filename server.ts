@@ -9,7 +9,7 @@ const PORT = 3000;
 app.use(express.json());
 
 // 楽天API設定
-const RAKUTEN_APP_ID = process.env.RAKUTEN_APP_ID || '1055088369869282145';
+const RAKUTEN_APP_ID = process.env.RAKUTEN_APP_ID || '52e88efe-2652-42d6-8a0f-8d6d5861ff23';
 const RAKUTEN_ACCESS_KEY = process.env.RAKUTEN_ACCESS_KEY || '';
 const RAKUTEN_AFFILIATE_ID = process.env.RAKUTEN_AFFILIATE_ID || '3d94ea21.0d257908.3d94ea22.0ed11c6e';
 
@@ -61,7 +61,10 @@ app.get('/api/rakuten/search', async (req, res) => {
 
       const apiUrl = `https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701?${params.toString()}`;
 
-      const headers: any = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' };
+      const headers: any = { 
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Referer': req.headers.referer || 'https://oyatsu-matching.vercel.app/'
+      };
       if (RAKUTEN_ACCESS_KEY) {
         headers['accessKey'] = RAKUTEN_ACCESS_KEY;
       }
