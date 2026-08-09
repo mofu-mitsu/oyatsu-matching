@@ -70,8 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const errorText = await response.text();
       
         console.error(
-          `⚠️ 楽天APIエラー (${response.status}):`,
-          errorText
+          ⚠️ 楽天APIエラー (${response.status}): ${errorText}
         );
       
         fallbackNeeded = true;
