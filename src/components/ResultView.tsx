@@ -38,6 +38,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
   const [items, setItems] = useState<RakutenItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [keywordUsed, setKeywordUsed] = useState<string>('');
+  const hasSentToGAS = React.useRef(false);
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
 
   // 演出用ステート
@@ -132,15 +133,18 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     fetchRakutenItems(resultType, answers.budget, answers.flavors, answers.dislikes, answers.customDislike);
 
     // GASに診断結果を送信（初回マウント/診断完了時）
-    sendResultToGAS({
-      mode: answers.mode,
-      typeCode: resultType.code,
-      typeName: resultType.title,
-      answers: answers,
-      budget: answers.budget,
-      flavors: answers.flavors,
-      keywordUsed: resultType.recommendedKeywords[0],
-    });
+    if (!hasSentToGAS.current) {
+      hasSentToGAS.current = true;
+      sendResultToGAS({
+        mode: answers.mode,
+        typeCode: resultType.code,
+        typeName: resultType.title,
+        answers: answers,
+        budget: answers.budget,
+        flavors: answers.flavors,
+        keywordUsed: resultType.recommendedKeywords[0],
+      });
+    }
   }, [answers]);
 
   // 楽天APIデータ取得関数
