@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getFallbackItems } from '../../src/data/fallbackItems';
 
-const RAKUTEN_APP_ID = process.env.RAKUTEN_APP_ID || '1055088369869282145';
+const RAKUTEN_APP_ID = process.env.RAKUTEN_APP_ID || '52e88efe-2652-42d6-8a0f-8d6d5861ff23';
 const RAKUTEN_ACCESS_KEY = process.env.RAKUTEN_ACCESS_KEY || '';
 const RAKUTEN_AFFILIATE_ID = process.env.RAKUTEN_AFFILIATE_ID || '3d94ea21.0d257908.3d94ea22.0ed11c6e';
 
 function formatRakutenItem(item: any) {
   const itemUrl = item.itemUrl ? item.itemUrl.split('?')[0] : '';
-  const affiliateUrl = item.affiliateUrl || \`https://hb.afl.rakuten.co.jp/hgc/\${RAKUTEN_AFFILIATE_ID}/?pc=\${encodeURIComponent(itemUrl)}\`;
+  const affiliateUrl = item.affiliateUrl || `https://hb.afl.rakuten.co.jp/hgc/${RAKUTEN_AFFILIATE_ID}/?pc=${encodeURIComponent(itemUrl)}`;
   const imageUrl = item.mediumImageUrls?.[0]?.imageUrl || item.smallImageUrls?.[0]?.imageUrl || '';
   return {
     itemName: item.itemName || 'おやつ',
@@ -43,9 +43,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     for (let i = flavors.length; i >= 0; i--) {
       const currentFlavors = flavors.slice(0, i);
-      searchKeyword = currentFlavors.length > 0 ? \`\${currentFlavors.join(' ')} \${keyword}\` : keyword;
+      searchKeyword = currentFlavors.length > 0 ? `${currentFlavors.join(' ')} ${keyword}` : keyword;
       
-      console.log(\`🛍️ 楽天商品検索リクエスト: keyword="\${searchKeyword}", price=\${minPrice}-\${maxPrice}, dislikes=[\${dislikes.join(',')}]\`);
+      console.log(`🛍️ 楽天商品検索リクエスト: keyword="${searchKeyword}", price=${minPrice}-${maxPrice}, dislikes=[${dislikes.join(',')}]`);
 
       const params = new URLSearchParams({
         applicationId: RAKUTEN_APP_ID,
@@ -59,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (minPrice && minPrice > 0) params.append('minPrice', String(minPrice));
       if (maxPrice && maxPrice > 0 && maxPrice < 999999) params.append('maxPrice', String(maxPrice));
 
-      const apiUrl = \`https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701?\${params.toString()}\`;
+      const apiUrl = `https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701?${params.toString()}`;
 
       const headers: any = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' };
       if (RAKUTEN_ACCESS_KEY) {
@@ -69,7 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const response = await fetch(apiUrl, { headers });
 
       if (!response.ok) {
-        console.warn(\`⚠️ 楽天APIエラー (\${response.status})\`);
+        console.warn(`⚠️ 楽天APIエラー (${response.status})`);
         fallbackNeeded = true;
         break;
       }
@@ -90,7 +90,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let items = data.Items.map((entry: any) => formatRakutenItem(entry.Item));
     if (dislikes.length > 0) {
       items = items.filter((item: any) => {
-        const text = \`\${item.itemName} \${item.itemCaption}\`.toLowerCase();
+        const text = `${item.itemName} ${item.itemCaption}`.toLowerCase();
         return !dislikes.some((dislike) => text.includes(dislike.toLowerCase().trim()));
       });
     }
