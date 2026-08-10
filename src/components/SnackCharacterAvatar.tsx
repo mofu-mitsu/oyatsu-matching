@@ -69,6 +69,7 @@ export const SnackCharacterAvatar: React.FC<SnackCharacterAvatarProps> = ({
           alt={`Character ${typeId}`}
           className="w-full h-full object-cover rounded-2xl hover:scale-105 transition-transform duration-300"
           referrerPolicy="no-referrer"
+          crossOrigin="anonymous"
         />
       </div>
     );

@@ -9,7 +9,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     catchphrase: '包み込むような優しさと、もっちり和みの幸せスイーツ派',
     description: '甘くて柔らかく、常温でほっと和む和菓子が大好きなあなた。周囲をなごませる温かい雰囲気があり、お茶と一緒にゆったり過ごす時間を何より愛しています。',
     personalityTraits: ['温厚で平和主義', '丁寧に味わう派', '伝統や安心感を大切にする'],
-    bestPairingTypeId: 'YHCW',
+    bestPairingTypeId: 'YHFJ',
     recommendedKeywords: ['和菓子 ギフト', '生大福', 'どら焼き', '生八ツ橋', '団子'],
     color: {
       bg: 'bg-emerald-50',
@@ -123,7 +123,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     catchphrase: 'パリッと皮の食感と、冷たいあずきの絶妙コラボ',
     description: 'パリパリした最中の皮の中に、冷たいアイスやあんこが詰まった和スイーツが大好き。食感のコントラストを楽しむ、機転の利くスマートな人です。',
     personalityTraits: ['要領が良い', 'ギャップ萌え', '直感が冴えている'],
-    bestPairingTypeId: 'YHFJ',
+    bestPairingTypeId: 'YHFW',
     recommendedKeywords: ['最中アイス', '冷やしぜんざい', 'あんこバー', '抹茶もなか'],
     color: {
       bg: 'bg-lime-50',
@@ -142,7 +142,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     catchphrase: '冷たさとザクザク食感の刺激的なハードハーモニー',
     description: 'アイスの中に入ったクランチチョコや、クッキーサンドアイスが大好きなあなた。刺激的で飽きない食感と冷たさを求める、好奇心旺盛なチャレンジャー！',
     personalityTraits: ['好奇心旺盛', '刺激を求める', 'アイデアマン'],
-    bestPairingTypeId: 'YHFW',
+    bestPairingTypeId: 'YHCW',
     recommendedKeywords: ['チョコミント アイス', 'クランチアイス', 'アイスサンドクッキー', 'チョコチップ'],
     color: {
       bg: 'bg-sky-50',
@@ -237,7 +237,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     catchphrase: 'バリバリ噛み砕く爽快感！醤油と海苔の質実剛健おやつ',
     description: '歯ごたえ抜群の堅焼きせんべいや柿の種、あられが大好き！嘘のないシンプルな美味しさと、バリバリ食べる爽快感でストレスを吹き飛ばすパワフルな人。',
     personalityTraits: ['情に厚い', 'ストレス解消が得意', '竹を割った性格'],
-    bestPairingTypeId: 'SHCJ',
+    bestPairingTypeId: 'STFJ',
     recommendedKeywords: ['堅焼き煎餅', '柿の種', '塩おかき', '黒胡椒せんべい'],
     color: {
       bg: 'bg-stone-100',
@@ -256,7 +256,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     catchphrase: 'やみつき必至！ガツンと響く塩気とバリバリハード食感',
     description: 'ポテトチップスやトルティーヤチップス、塩ナッツなど、塩気と食感が癖になるお菓子が大好き。パーティーや友達とワイワイ楽しむのが大好きなムードメーカー！',
     personalityTraits: ['ムードメーカー', 'お祭り好き', '直感的で行動的'],
-    bestPairingTypeId: 'SHCW',
+    bestPairingTypeId: 'SHCJ',
     recommendedKeywords: ['ポテトチップス', 'プレッツェル', 'ミックスナッツ 塩味', 'トルティーヤ'],
     color: {
       bg: 'bg-rose-50',
@@ -294,7 +294,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     catchphrase: 'クールでハードな辛塩系！癖になる大人のおつまみフローズン',
     description: 'フローズンスパイシーナッツや冷やしポテト、プレッツェルアイスなど、意外性とインパクトを愛するミステリアスなあなた。ツンデレでハマると深い魅惑の持ち主。',
     personalityTraits: ['ミステリアス', '探究心が強い', 'ギャップで魅了する'],
-    bestPairingTypeId: 'STFJ',
+    bestPairingTypeId: 'SHCW',
     recommendedKeywords: ['スパイシーナッツ', 'プレッツェル アイス', 'ジャーキー',  '冷やしポテト', 'フローズン おつまみ'],
     color: {
       bg: 'bg-purple-50',

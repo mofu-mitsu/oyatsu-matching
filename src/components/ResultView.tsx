@@ -80,6 +80,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
   const [keywordUsed, setKeywordUsed] = useState<string>('');
   const hasSentToGAS = React.useRef(false);
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
+  const [showImageModal, setShowImageModal] = useState<string | null>(null);
 
   // 演出用ステート
   const [eyeContactMsg, setEyeContactMsg] = useState<string>('');
@@ -252,17 +253,32 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         console.warn('API returned error');
       }
 
-      if (combined.length < 6) {
-        const fallbacks = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes);
-        // フォールバックをランダムにシャッフル
-        const shuffledFallbacks = fallbacks.sort(() => 0.5 - Math.random());
-        const seenUrls = new Set(combined.map((item: any) => item.itemUrl));
-        for (const fb of shuffledFallbacks) {
-          if (combined.length >= 6) break;
-          if (!seenUrls.has(fb.itemUrl)) {
-            combined.push(fb);
-            seenUrls.add(fb.itemUrl);
-          }
+      
+      // APIが取得できたものに関わらず、常にfallbackから最低3つは追加する（最大9つになるように）
+      const fallbacks = getFallbackItems(typeInfo.id, 0, 99999, [], []);
+      const shuffledFallbacks = fallbacks.sort(() => 0.5 - Math.random());
+      const seenUrls = new Set(combined.map((item: any) => item.itemUrl));
+      
+      let fallbackAddedCount = 0;
+      
+      // まずAPIが6件未満なら、fallbackを足して6件にする
+      for (const fb of shuffledFallbacks) {
+        if (combined.length >= 6) break;
+        if (!seenUrls.has(fb.itemUrl)) {
+          combined.push(fb);
+          seenUrls.add(fb.itemUrl);
+          fallbackAddedCount++;
+        }
+      }
+      
+      // さらに、まだ使っていないfallbackからランダムに3件追加する (合計最大9件)
+      let extraAdded = 0;
+      for (const fb of shuffledFallbacks) {
+        if (extraAdded >= 3 || combined.length >= 9) break;
+        if (!seenUrls.has(fb.itemUrl)) {
+          combined.push(fb);
+          seenUrls.add(fb.itemUrl);
+          extraAdded++;
         }
       }
 
@@ -271,7 +287,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     } catch (err) {
       console.error('Rakuten fetch error:', err);
       console.log('フォールバックデータを使用します');
-      const fallbacks = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes);
+      const fallbacks = getFallbackItems(typeInfo.id, 0, 99999, [], []);
       setItems(fallbacks);
       setKeywordUsed(mainKw);
     } finally {
@@ -287,17 +303,23 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     setIsCapturing(true);
     try {
       await new Promise(r => setTimeout(r, 150));
-      await toPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1 });
+      await toPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1, useCORS: true, cacheBust: true });
       await new Promise(r => setTimeout(r, 150));
       const dataUrl = await toPng(node, {
         quality: 0.95,
         backgroundColor: '#ffffff',
-        pixelRatio: 2, // 高画質化
+        pixelRatio: 2, useCORS: true, cacheBust: true,
       });
-      const link = document.createElement('a');
-      link.download = `oyatsu-shindan-${snackType.code}.png`;
-      link.href = dataUrl;
-      link.click();
+      
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        setShowImageModal(dataUrl);
+      } else {
+        const link = document.createElement('a');
+        link.download = `oyatsu-shindan-${snackType.code}.png`;
+        link.href = dataUrl;
+        link.click();
+      }
     } catch (err) {
       console.error('画像保存に失敗しました:', err);
       alert('画像の保存に失敗しちゃいました💦');
@@ -314,12 +336,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     setIsCapturing(true);
     try {
       await new Promise(r => setTimeout(r, 150));
-      await toPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1 });
+      await toPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1, useCORS: true, cacheBust: true });
       await new Promise(r => setTimeout(r, 150));
       const dataUrl = await toPng(node, {
         quality: 0.95,
         backgroundColor: '#ffffff',
-        pixelRatio: 2,
+        pixelRatio: 2, useCORS: true, cacheBust: true,
       });
       
       const blob = await (await fetch(dataUrl)).blob();
@@ -332,18 +354,35 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
           files: [file],
         });
       } else {
-        // シェア非対応の場合はフォールバックとして保存
-        const link = document.createElement('a');
-        link.download = `oyatsu-${snackType.code}.png`;
-        link.href = dataUrl;
-        link.click();
-        alert('お使いのブラウザは画像シェアに対応していないため、画像を保存しました！SNSでシェアしてみてね✨');
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+          setShowImageModal(dataUrl);
+        } else {
+          const link = document.createElement('a');
+          link.download = `oyatsu-${snackType.code}.png`;
+          link.href = dataUrl;
+          link.click();
+        }
+        alert('お使いのブラウザは画像シェアに対応していないため、画像を保存しました！SNS等でシェアしてみてね✨');
       }
     } catch (err) {
       console.error('シェアに失敗しました:', err);
-      alert('シェア機能の呼び出しに失敗しちゃいました💦');
     } finally {
       setIsCapturing(false);
+    }
+  };
+
+  const handleTextShare = () => {
+    if (!snackType) return;
+    const shareText = getShareText(snackType.id, snackType.characterName);
+    if (navigator.share) {
+      navigator.share({
+        title: '私のおやつ性格診断結果！',
+        text: shareText,
+      }).catch(console.error);
+    } else {
+      const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+      window.open(url, '_blank');
     }
   };
 
@@ -381,7 +420,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         )}
         <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10">
           <div className="flex flex-col items-center">
-            <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-white/95 shadow-md border-2 border-amber-200 flex items-center justify-center p-2 flex-shrink-0 animate-bounce duration-1000 relative">
+            <div className="w-40 h-28 sm:w-48 sm:h-32 rounded-3xl bg-white/95 shadow-md border-2 border-amber-200 flex items-center justify-center p-2 flex-shrink-0 animate-bounce duration-1000 relative overflow-hidden">
               <SnackCharacterAvatar typeId={snackType.id} size="lg" />
             </div>
             <span className="text-xs font-black text-amber-900 mt-2 bg-amber-100/90 px-3 py-1 rounded-full border border-amber-300 shadow-2xs">
@@ -493,23 +532,49 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       <div className="flex flex-wrap items-center justify-center gap-3">
         <button
           type="button"
-          onClick={handleSaveImage}
+          onClick={() => { playPopSound(); handleSaveImage(); }}
           disabled={isCapturing}
-          className="bg-white hover:bg-stone-50 text-stone-700 border border-stone-200 font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
+          className="bg-white hover:bg-stone-50 text-stone-700 border border-stone-200 font-extrabold text-[10px] sm:text-xs px-2 sm:px-3 py-2.5 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center gap-1 disabled:opacity-50 flex-1 justify-center"
         >
           <Download className="w-4 h-4" />
-          <span>画像を保存する</span>
+          <span>画像を保存</span>
         </button>
         <button
           type="button"
           onClick={() => { playPopSound(); handleShare(); }}
           disabled={isCapturing}
-          className="bg-stone-800 hover:bg-stone-900 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-md shadow-stone-200 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50"
+          className="bg-white hover:bg-stone-50 text-stone-700 border border-stone-200 font-extrabold text-[10px] sm:text-xs px-2 sm:px-3 py-2.5 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center gap-1 disabled:opacity-50 flex-1 justify-center"
         >
           <Share2 className="w-4 h-4" />
-          <span>結果をシェアする</span>
+          <span>画像をシェア</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => { playPopSound(); handleTextShare(); }}
+          disabled={isCapturing}
+          className="bg-stone-800 hover:bg-stone-900 text-white font-extrabold text-[10px] sm:text-xs px-2 sm:px-4 py-2.5 rounded-2xl shadow-md shadow-stone-200 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-1 disabled:opacity-50 flex-1 justify-center"
+        >
+          <Share2 className="w-4 h-4" />
+          <span>結果をシェア</span>
         </button>
       </div>
+
+      {showImageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowImageModal(null)}>
+          <div className="bg-white p-4 rounded-3xl max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+            <p className="text-center font-extrabold text-stone-800">画像を長押しして保存してね✨</p>
+            <div className="rounded-2xl overflow-hidden shadow-inner border border-stone-200">
+              <img src={showImageModal} alt="診断結果" className="w-full h-auto" />
+            </div>
+            <button
+              onClick={() => setShowImageModal(null)}
+              className="w-full py-3 bg-stone-200 text-stone-800 font-bold rounded-2xl hover:bg-stone-300 transition-colors"
+            >
+              閉じる
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 「おやつがこちらを見ています…👀✨」＆ もふもふマスコット演出 */}
       <div className="space-y-3" id="eye-contact-section">
