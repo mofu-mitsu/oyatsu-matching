@@ -34,6 +34,45 @@ const ParameterBar = ({ leftLabel, rightLabel, value, colorClass }: { leftLabel:
   );
 };
 
+
+const getShareText = (typeCode: string, characterName: string) => {
+  const url = `https://oyatsu-matching.vercel.app/${typeCode}.html`;
+  const hashtags = `#おやつマッチング #おやつ16タイプ`;
+
+  // 🟦 ごまどうふさん専用：50%の確率で「笹かまぼこ（楽天API不条理）」に分岐！
+  if (typeCode === 'YTCJ') {
+    const isSasakamaboko = Math.random() < 0.5;
+    if (isSasakamaboko) {
+      return `✦ 概念不具合 ✦\nおやつ診断スタート ➔ 結果『ごまどうふさん』\n➔ 楽天API取得結果『笹かまぼこ』\nおやつって言いましたよね？？？？？\n${url}\n#おやつマッチング #おやつ16タイプ #なんで`;
+    }
+    return `✦ 遭遇率0.1% ✦\nおやつ診断で『${characterName}』だった🥢\n塩味・やわらか・冷たい・和、全部揃えて胡麻豆腐に到達。\n他に何持ってきていいか分からないキャラです。\n${url}\n${hashtags}`;
+  }
+
+  // 16タイプのテキストマップ（画像と完全連動）
+  const textMap: Record<string, string> = {
+    // 🌸 Sタイプ（甘味）
+    'STFJ': `✦ TYPE: 王道クラシック ✦\nおやつ16タイプ診断で、\n私は『${characterName}』でした🍡\nふんわり甘くて和風、定番を大事にするタイプらしい。\nあなたの定番おやつは何かな？\n${url}\n${hashtags}`,
+    'STFW': `✦ TYPE: 甘党スイーツ派 ✦\nおやつ診断したら『${characterName}』だった🧁\n洋のスイーツ派、ふわっと背伸びしたい欲もあるタイプ。\nこのキャラ、なんか王子って名前だけど実は甘えん坊説ある。\n${url}\n${hashtags}`,
+    'STCJ': `✦ TYPE: 清涼感特化 ✦\nおやつ診断の結果は『${characterName}』でした🫧\n冷たくて涼やかな和風スイーツ派。\n静かな時間を一人でじっくり楽しみたい時にぴったり！\n${url}\n${hashtags}`,
+    'STCW': `✦ TYPE: ごほうび贅沢枠 ✦\n私のおやつタイプは『${characterName}』でした🍮\nとろける洋スイーツで自分を甘やかす天才らしいｗ\nみんなの「ごほうびおやつ」は何？\n${url}\n${hashtags}`,
+    'SHFW': `✦ TYPE: アクティブ派 ✦\nおやつ診断したら『${characterName}』だった🍪\nザクザク硬めの洋菓子派！\nノリとテンションで新しい味に挑戦したくなるタイプですｗ\n${url}\n${hashtags}`,
+    'SHFJ': `✦ TYPE: 伝統こだわり枠 ✦\nおやつ診断で『${characterName}』が出たよ🍘\n硬めで香ばしい伝統の味！\n譲れないこだわりとブレない軸があるらしいｗ\n${url}\n${hashtags}`,
+    'SHCJ': `✦ TYPE: 熟練隠者枠 ✦\nおやつ診断で『${characterName}』でした🍵\n冷たくてかためな渋めの和風枠。\n静かに佇む職人おじいちゃんタイプってこと…？ｗ\n${url}\n${hashtags}`,
+    'SHCW': `✦ 遭遇率3.2% ✦\n冷たいチョコ系おやつの『${characterName}』でした🐧\nかため・チョコ・冷たい・洋、って全部ハード路線。\n自分ハードなキャラだと思わなかったんだけど…ｗ\n${url}\n${hashtags}`,
+
+    // 🍺 Yタイプ（塩味）
+    'YTFJ': `✦ TYPE: ほっこり師範代 ✦\nおやつ16タイプ診断で『${characterName}』でした🥢\n焦げ目と醤油の香ばしさを愛する和風タイプｗ\n「焦げ目は正義」って語り出すのわかるかもｗ\n${url}\n${hashtags}`,
+    'YTFW': `✦ TYPE: シックな大人派 ✦\nおやつ診断したら『${characterName}』だった🍷\n甘すぎない塩系焼き菓子・チーズを嗜む大人枠！\nカフェやワインで上質な時間を過ごすタイプらしいｗ\n${url}\n${hashtags}`,
+    'YHFJ': `✦ TYPE: 豪快大将枠 ✦\nおやつ診断で『${characterName}』が出たよ🍘\nバリバリ硬い塩味せんべい！\nストレスを物理で砕く頼れる大将タイプｗ\n${url}\n${hashtags}`,
+    'YHFW': `✦ TYPE: 盛り上げムードメーカー ✦\nおやつ診断が『${characterName}』を推してきた🍟\nしょっぱくて硬くて常温で洋…もう完全にパーティー＆ビール案件じゃんｗ\n${url}\n${hashtags}`,
+    'YTCW': `✦ 遭遇率1.8% ✦\nおやつ16タイプ診断、当たった人わずか1.8%！\n『${characterName}』でした🍷\nしょっぱい・やわらか・冷たい・洋。\n大人のおつまみ枠に迷い込んだ感じ。あなたは何タイプ？\n${url}\n${hashtags}`,
+    'YHCJ': `✦ 遭遇率1.2% ✦\nおやつ診断で『${characterName}』が出たよ🫛\n塩気・硬め・冷たい・和…\n「これは塩分と知恵のチャージだ」と言い張る実用派ですｗ\n${url}\n${hashtags}`,
+    'YHCW': `✦ 遭遇率1.5% ✦\nおやつ診断で『${characterName}』が出たんだけどｗ🥩\n冷たくて硬くて辛いハード系おつまみ！\nタフで野性的なキャラらしいｗ\n${url}\n${hashtags}`,
+  };
+
+  return textMap[typeCode] || `私のおやつ性格診断結果は『${characterName}』でした✨\nあなたにぴったりのおやつを見つけよう！\n${url}\n${hashtags}`;
+};
+
 export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
   const [snackType, setSnackType] = useState<SnackTypeInfo | null>(null);
   const [items, setItems] = useState<RakutenItem[]>([]);
@@ -202,32 +241,39 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       if (allDislikes.length > 0) params.append('dislikes', allDislikes.join(','));
 
       const res = await fetch(`/api/rakuten/search?${params.toString()}`);
+      let combined = [];
+      let usedKw = mainKw;
       if (res.ok) {
         const data = await res.json();
-        if (data.items && data.items.length > 0) {
-          // fallbackと3つずつハーフハーフにする
-          const fallbacks = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes);
-          const apiItems = data.items.slice(0, 3);
-          const fallbackItemsToUse = fallbacks.slice(0, 3);
-          const combined = [...apiItems, ...fallbackItemsToUse];
-          // 重複を取り除くなどしても良いが、ここでは単純に結合
-          setItems(combined);
-          setKeywordUsed(data.keywordUsed || mainKw);
-        } else {
-          console.warn('API returned empty items');
-          throw new Error('Empty items');
-        }
+        const apiItems = data.items || [];
+        combined = [...apiItems];
+        usedKw = data.keywordUsed || mainKw;
       } else {
-        const text = await res.text();
-        console.warn(`楽天検索API呼び出し失敗: Status=${res.status}, Text=${text}`);
-        throw new Error('API failed'); // catchブロックでフォールバックさせる
+        console.warn('API returned error');
       }
+
+      if (combined.length < 6) {
+        const fallbacks = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes);
+        // フォールバックをランダムにシャッフル
+        const shuffledFallbacks = fallbacks.sort(() => 0.5 - Math.random());
+        const seenUrls = new Set(combined.map((item: any) => item.itemUrl));
+        for (const fb of shuffledFallbacks) {
+          if (combined.length >= 6) break;
+          if (!seenUrls.has(fb.itemUrl)) {
+            combined.push(fb);
+            seenUrls.add(fb.itemUrl);
+          }
+        }
+      }
+
+      setItems(combined);
+      setKeywordUsed(usedKw);
     } catch (err) {
       console.error('Rakuten fetch error:', err);
       console.log('フォールバックデータを使用します');
       const fallbacks = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes);
       setItems(fallbacks);
-      setKeywordUsed(mainKw + " (フォールバック)");
+      setKeywordUsed(mainKw);
     } finally {
       setLoading(false);
     }
@@ -240,7 +286,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     
     setIsCapturing(true);
     try {
-      // html-to-image で oklab エラーを回避するため、背景色などを指定
+      await new Promise(r => setTimeout(r, 150));
+      await toPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1 });
+      await new Promise(r => setTimeout(r, 150));
       const dataUrl = await toPng(node, {
         quality: 0.95,
         backgroundColor: '#ffffff',
@@ -265,6 +313,9 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
 
     setIsCapturing(true);
     try {
+      await new Promise(r => setTimeout(r, 150));
+      await toPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1 });
+      await new Promise(r => setTimeout(r, 150));
       const dataUrl = await toPng(node, {
         quality: 0.95,
         backgroundColor: '#ffffff',
@@ -277,7 +328,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: '私のおやつ性格診断結果！',
-          text: `私の診断結果は「${snackType.title}」でした！\n\n#16タイプおやつ診断`,
+          text: getShareText(snackType.id, snackType.characterName),
           files: [file],
         });
       } else {

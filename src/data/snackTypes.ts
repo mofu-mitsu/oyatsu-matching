@@ -10,7 +10,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     description: '甘くて柔らかく、常温でほっと和む和菓子が大好きなあなた。周囲をなごませる温かい雰囲気があり、お茶と一緒にゆったり過ごす時間を何より愛しています。',
     personalityTraits: ['温厚で平和主義', '丁寧に味わう派', '伝統や安心感を大切にする'],
     bestPairingTypeId: 'YHCW',
-    recommendedKeywords: ['和菓子 ギフト', '生大福', 'どら焼き', '生八ツ橋'],
+    recommendedKeywords: ['和菓子 ギフト', '生大福', 'どら焼き', '生八ツ橋', '団子'],
     color: {
       bg: 'bg-emerald-50',
       badge: 'bg-emerald-100 text-emerald-800',
@@ -67,7 +67,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     description: '濃厚なプリン、クリーミーなアイスクリーム、口どけ生チョコレートなど、冷たくてとろける甘さを愛してやまないあなた。自分へのご褒美上手な贅沢家。',
     personalityTraits: ['自分を甘やかす天才', 'こだわり派', '感覚を大切にする'],
     bestPairingTypeId: 'STCJ',
-    recommendedKeywords: ['高級プリン', 'プレミアムアイス', '生チョコ', 'レアチーズケーキ', 'ひんやり スイーツ', '冷蔵 洋菓子', 'アイスクリーム'],
+    recommendedKeywords: ['プリン', 'プレミアムアイス', '生チョコ', 'レアチーズケーキ', 'ひんやり スイーツ', '冷蔵 洋菓子', 'アイスクリーム'],
     color: {
       bg: 'bg-pink-50',
       badge: 'bg-pink-100 text-pink-800',
@@ -105,7 +105,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     description: 'バターたっぷりのクッキーやサクサクのミルフィーユパイが大好物。噛んだ瞬間の「ザクッ」「サクッ」とした音が大好きな、エネルギッシュで明朗な性格です。',
     personalityTraits: ['明るく前向き', 'リズム感を大事にする', 'アクティブ'],
     bestPairingTypeId: 'SHFJ',
-    recommendedKeywords: ['高級クッキー', 'サクサク パイ', 'ミルフィーユ', 'フロランタン'],
+    recommendedKeywords: ['クッキー', 'サクサク パイ', 'ミルフィーユ', 'フロランタン'],
     color: {
       bg: 'bg-yellow-50',
       badge: 'bg-yellow-100 text-yellow-800',
@@ -123,7 +123,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     catchphrase: 'パリッと皮の食感と、冷たいあずきの絶妙コラボ',
     description: 'パリパリした最中の皮の中に、冷たいアイスやあんこが詰まった和スイーツが大好き。食感のコントラストを楽しむ、機転の利くスマートな人です。',
     personalityTraits: ['要領が良い', 'ギャップ萌え', '直感が冴えている'],
-    bestPairingTypeId: 'YTFW',
+    bestPairingTypeId: 'YHFJ',
     recommendedKeywords: ['最中アイス', '冷やしぜんざい', 'あんこバー', '抹茶もなか'],
     color: {
       bg: 'bg-lime-50',
@@ -161,7 +161,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     catchphrase: '香ばしい醤油の香りと、伸び～るお餅のホッとするぬくもり',
     description: '甘さよりも香ばしい醤油の風味やお餅のモチモチ食感が大好きなあなた。派手さよりもしっかりした味わいと実質的な満足感を大切にする、頼りがいのあるタイプ。',
     personalityTraits: ['しっかり者', '親分肌・姉御肌', '素朴さを愛する'],
-    bestPairingTypeId: 'YHFJ',
+    bestPairingTypeId: 'YTFW',
     recommendedKeywords: ['焼き餅', '生おかき', '醤油煎餅', 'のり餅'],
     color: {
       bg: 'bg-amber-100/50',
@@ -180,7 +180,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     catchphrase: 'チーズのコクとバターの塩気が醸し出す大人なひととき',
     description: '甘すぎないセイボリー（塩系）の焼き菓子や、芳醇なチーズスコーンが大好物。カフェでワインやコーヒーと共に過ごす時間を楽しむ、洗練されたお洒落さん。',
     personalityTraits: ['マイペース', 'ハイセンス', '心地よい距離感を保つ'],
-    bestPairingTypeId: 'SHCJ',
+    bestPairingTypeId: 'YTFJ',
     recommendedKeywords: ['チーズスコーン', '塩バタースコーン', 'セイボリー タルト', 'チーズパイ'],
     color: {
       bg: 'bg-stone-50',
@@ -200,7 +200,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     description: '冷たくてさっぱりした塩味や、ゴマ豆腐・豆腐スイーツなどのヘルシー＆マイルドなおやつを好むあなた。無駄のないスッキリした生活を好むナチュラル志向。',
     personalityTraits: ['ナチュラル志向', '冷静で客観的', '自己管理が得意'],
     bestPairingTypeId: 'YHCJ',
-    recommendedKeywords: ['胡麻豆腐', '塩羊羹', '冷やし塩豆', '塩ゼリー'],
+    recommendedKeywords: ['胡麻豆腐', '塩羊羹', '冷やし塩豆','ジーマーミ豆腐','塩ゼリー','豆腐 スイーツ'],
     color: {
       bg: 'bg-slate-50',
       badge: 'bg-slate-200 text-slate-800',
@@ -237,7 +237,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     catchphrase: 'バリバリ噛み砕く爽快感！醤油と海苔の質実剛健おやつ',
     description: '歯ごたえ抜群の堅焼きせんべいや柿の種、あられが大好き！嘘のないシンプルな美味しさと、バリバリ食べる爽快感でストレスを吹き飛ばすパワフルな人。',
     personalityTraits: ['情に厚い', 'ストレス解消が得意', '竹を割った性格'],
-    bestPairingTypeId: 'YTFJ',
+    bestPairingTypeId: 'SHCJ',
     recommendedKeywords: ['堅焼き煎餅', '柿の種', '塩おかき', '黒胡椒せんべい'],
     color: {
       bg: 'bg-stone-100',
@@ -257,7 +257,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     description: 'ポテトチップスやトルティーヤチップス、塩ナッツなど、塩気と食感が癖になるお菓子が大好き。パーティーや友達とワイワイ楽しむのが大好きなムードメーカー！',
     personalityTraits: ['ムードメーカー', 'お祭り好き', '直感的で行動的'],
     bestPairingTypeId: 'SHCW',
-    recommendedKeywords: ['ポテトチップス 高級', 'プレッツェル', 'ミックスナッツ 塩味', 'トルティーヤ'],
+    recommendedKeywords: ['ポテトチップス', 'プレッツェル', 'ミックスナッツ 塩味', 'トルティーヤ'],
     color: {
       bg: 'bg-rose-50',
       badge: 'bg-rose-100 text-rose-800',
@@ -276,7 +276,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     description: '冷やして食べる塩せんべいや冷たさを感じる和スナック。一風変わった楽しみ方を知っている、知性あふれる個性的クリエイタータイプ。',
     personalityTraits: ['クリエイティブ', '人と違う視点を持つ', '冷静沈着'],
     bestPairingTypeId: 'YTCJ',
-    recommendedKeywords: ['冷やし塩せんべい', 'フリーズドライ おつまみ', '塩もなか', '冷製 おつまみ 和', 'ひんやり おつまみ'],
+    recommendedKeywords: ['塩もなか', 'おつまみ スナック', '和菓子 塩', '冷製 おつまみ', 'ひんやり スナック'],
     color: {
       bg: 'bg-cyan-50',
       badge: 'bg-cyan-100 text-cyan-800',
@@ -295,7 +295,7 @@ export const SNACK_TYPES: Record<string, SnackTypeInfo> = {
     description: 'フローズンスパイシーナッツや冷やしポテト、プレッツェルアイスなど、意外性とインパクトを愛するミステリアスなあなた。ツンデレでハマると深い魅惑の持ち主。',
     personalityTraits: ['ミステリアス', '探究心が強い', 'ギャップで魅了する'],
     bestPairingTypeId: 'STFJ',
-    recommendedKeywords: ['スパイシーナッツ', 'プレッツェル アイス', '冷やしポテト', 'フローズンおつまみ'],
+    recommendedKeywords: ['スパイシーナッツ', 'プレッツェル アイス', 'ジャーキー',  '冷やしポテト', 'フローズン おつまみ'],
     color: {
       bg: 'bg-purple-50',
       badge: 'bg-purple-100 text-purple-800',
@@ -319,7 +319,7 @@ export function calculateSnackType(
   const s = sweetScore > 50 ? 'S' : 'Y';
   const t = tenderScore > 50 ? 'T' : 'H';
   const f = freshScore > 50 ? 'C' : 'F'; // 50超ならChilled(C), 以下ならFresh(F)
-  const j = japaneseScore > 50 ? 'W' : 'J'; // 50超ならWestern(W), 以下ならJapanese(J)
+  const j = japaneseScore >= 50 ? 'W' : 'J'; // 50以上ならWestern(W), 未満ならJapanese(J)
 
   const code = `${s}${t}${f}${j}`;
   return SNACK_TYPES[code] || SNACK_TYPES.STFW;
