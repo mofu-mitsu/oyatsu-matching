@@ -158,6 +158,10 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
        // 温度感が半々
        const altF = resultType.code[2] === 'F' ? 100 : 0;
        altType = calculateSnackType(answers.sweetValue, tenderScore, altF, answers.japaneseValue);
+    } else if (tenderScore === 50) {
+       // 食感が半々
+       const altT = resultType.code[1] === 'T' ? 0 : 100;
+       altType = calculateSnackType(answers.sweetValue, altT, answers.freshValue, answers.japaneseValue);
     }
     
     // LSI回避などで同一になった場合は無効化
