@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { toPng } from 'html-to-image';
+import html2canvas from 'html2canvas';
 import { QuizAnswers, RakutenItem, SnackTypeInfo } from '../types';
 import { SnackCharacterAvatar } from './SnackCharacterAvatar';
 import { calculateSnackType, SNACK_TYPES } from '../data/snackTypes';
@@ -108,26 +108,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
   const [isPureLSI, setIsPureLSI] = useState<boolean>(false);
   const [alternateType, setAlternateType] = useState<SnackTypeInfo | null>(null);
 
-  const [rakutenImageUri, setRakutenImageUri] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (recommendedItem?.imageUrl) {
-      // Fetch rakuten image and convert to data URI to prevent html-to-image CORS/loading issues
-      fetch('/api/image-proxy?url=' + encodeURIComponent(recommendedItem.imageUrl))
-        .then(res => res.blob())
-        .then(blob => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            setRakutenImageUri(reader.result as string);
-          };
-          reader.readAsDataURL(blob);
-        })
-        .catch(err => {
-          console.error('Failed to proxy Rakuten image', err);
-          setRakutenImageUri(recommendedItem.imageUrl);
-        });
-    }
-  }, [recommendedItem?.imageUrl]);
+  
 
 
   useEffect(() => {
@@ -337,13 +318,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     setIsCapturing(true);
     try {
       await new Promise(r => setTimeout(r, 150));
-      await toPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1, useCORS: true, cacheBust: false });
-      await new Promise(r => setTimeout(r, 150));
-      const dataUrl = await toPng(node, {
-        quality: 0.95,
-        backgroundColor: '#ffffff',
-        pixelRatio: 2, useCORS: true, cacheBust: false,
-      });
+      const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+      const dataUrl = canvas.toDataURL('image/png', 0.95);
       
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
@@ -370,13 +346,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     setIsCapturing(true);
     try {
       await new Promise(r => setTimeout(r, 150));
-      await toPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1, useCORS: true, cacheBust: false });
-      await new Promise(r => setTimeout(r, 150));
-      const dataUrl = await toPng(node, {
-        quality: 0.95,
-        backgroundColor: '#ffffff',
-        pixelRatio: 2, useCORS: true, cacheBust: false,
-      });
+      const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+      const dataUrl = canvas.toDataURL('image/png', 0.95);
       
       const blob = dataURItoBlob(dataUrl);
       const file = new File([blob], `oyatsu-${snackType.code}.png`, { type: 'image/png' });

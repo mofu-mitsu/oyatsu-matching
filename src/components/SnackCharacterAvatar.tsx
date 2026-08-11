@@ -61,25 +61,31 @@ export const SnackCharacterAvatar: React.FC<SnackCharacterAvatarProps> = ({
   const dimension = sizeMap[size];
   const aiGeneratedImg = AI_CHARACTER_IMAGES[typeId];
   
+
   const [dataUri, setDataUri] = useState<string | null>(null);
 
   useEffect(() => {
     if (aiGeneratedImg) {
-      fetch(aiGeneratedImg)
-        .then(res => res.blob())
-        .then(blob => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            setDataUri(reader.result);
-          };
-          reader.readAsDataURL(blob);
-        })
-        .catch(err => {
-          console.error('Image fetch error', err);
-          setDataUri(aiGeneratedImg);
-        });
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          setDataUri(canvas.toDataURL('image/jpeg', 0.8));
+        }
+      };
+      img.onerror = () => {
+        // Fallback
+        setDataUri(aiGeneratedImg);
+      };
+      img.src = aiGeneratedImg;
     }
   }, [aiGeneratedImg]);
+
 
 
   if (aiGeneratedImg) {
@@ -88,9 +94,7 @@ export const SnackCharacterAvatar: React.FC<SnackCharacterAvatarProps> = ({
         <img
           src={dataUri || aiGeneratedImg}
           alt={`Character ${typeId}`}
-          className="w-full h-full object-cover rounded-2xl hover:scale-105 transition-transform duration-300"
-          referrerPolicy="no-referrer"
-          crossOrigin="anonymous"
+          className="w-full h-full object-cover rounded-2xl"
         />
       </div>
     );
