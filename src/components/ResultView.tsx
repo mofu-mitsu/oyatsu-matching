@@ -303,12 +303,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     setIsCapturing(true);
     try {
       await new Promise(r => setTimeout(r, 150));
-      await toPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1, useCORS: true, cacheBust: true });
+      await toPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1, useCORS: true, cacheBust: false });
       await new Promise(r => setTimeout(r, 150));
       const dataUrl = await toPng(node, {
         quality: 0.95,
         backgroundColor: '#ffffff',
-        pixelRatio: 2, useCORS: true, cacheBust: true,
+        pixelRatio: 2, useCORS: true, cacheBust: false,
       });
       
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -336,12 +336,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     setIsCapturing(true);
     try {
       await new Promise(r => setTimeout(r, 150));
-      await toPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1, useCORS: true, cacheBust: true });
+      await toPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1, useCORS: true, cacheBust: false });
       await new Promise(r => setTimeout(r, 150));
       const dataUrl = await toPng(node, {
         quality: 0.95,
         backgroundColor: '#ffffff',
-        pixelRatio: 2, useCORS: true, cacheBust: true,
+        pixelRatio: 2, useCORS: true, cacheBust: false,
       });
       
       const blob = await (await fetch(dataUrl)).blob();
@@ -560,8 +560,14 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       </div>
 
       {showImageModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowImageModal(null)}>
-          <div className="bg-white p-4 rounded-3xl max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto" onClick={() => setShowImageModal(null)}>
+          <div className="bg-white p-4 rounded-3xl max-w-sm w-full space-y-4 my-8 relative" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setShowImageModal(null)}
+              className="absolute -top-12 right-0 w-10 h-10 bg-white/20 text-white rounded-full flex items-center justify-center hover:bg-white/40 backdrop-blur-md transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
             <p className="text-center font-extrabold text-stone-800">画像を長押しして保存してね✨</p>
             <div className="rounded-2xl overflow-hidden shadow-inner border border-stone-200">
               <img src={showImageModal} alt="診断結果" className="w-full h-auto" />

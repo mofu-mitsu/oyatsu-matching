@@ -5913,9 +5913,30 @@ Object.values(SNACK_TYPES).forEach((typeInfo) => {
       </div>
     </div>
 
-    <div class="p-5">
+    <!-- \u30D1\u30F3\u304F\u305A\u30EA\u30B9\u30C8 -->
+    <nav class="px-5 pt-4 pb-2" aria-label="Breadcrumb">
+      <ol class="flex items-center space-x-2 text-[10px] text-stone-500 font-bold">
+        <li><a href="/" class="hover:text-rose-500 transition-colors">\u30DB\u30FC\u30E0</a></li>
+        <li><span class="text-stone-300">/</span></li>
+        <li><a href="/" class="hover:text-rose-500 transition-colors">16\u30BF\u30A4\u30D7\u304A\u3084\u3064\u8A3A\u65AD</a></li>
+        <li><span class="text-stone-300">/</span></li>
+        <li class="text-stone-800" aria-current="page">${typeInfo.characterName}</li>
+      </ol>
+    </nav>
+
+    <!-- \u30C8\u30C3\u30D7\u306E\u8A3A\u65AD\u30DC\u30BF\u30F3 -->
+    <div class="px-5 mb-6 mt-2">
+      <a href="/" class="inline-flex items-center justify-center w-full bg-gradient-to-r from-rose-500 to-pink-500 text-white font-extrabold px-6 py-4 rounded-2xl shadow-md hover:scale-[1.02] active:scale-95 transition-all gap-2 text-sm">
+        <span>\u81EA\u5206\u306E\u304A\u3084\u3064\u30BF\u30A4\u30D7\u3092\u8A3A\u65AD\u3059\u308B\uFF01</span>
+        <span>\u2728</span>
+      </a>
+      <p class="text-center text-[10px] font-bold text-stone-500 mt-3">
+        \u203B\u3053\u308C\u306F\u304A\u53CB\u9054\u306E\u8A3A\u65AD\u7D50\u679C\u3067\u3059
+      </p>
+    </div>
+
+    <div class="px-5">
       <div class="text-center mb-6 mt-4">
-        <p class="text-stone-500 font-bold mb-2 text-xs">\uFF3C \u53CB\u9054\u306E\u8A3A\u65AD\u7D50\u679C\u306F\u2026 \uFF0F</p>
         <h1 class="text-2xl font-black text-stone-800 mb-3">${typeInfo.characterName}</h1>
         <p class="text-xs font-extrabold text-rose-600 px-4 py-1.5 bg-rose-50 rounded-full inline-block border border-rose-200 shadow-sm">
           ${typeInfo.title}
