@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { HomeView } from './components/HomeView';
 import { QuizView } from './components/QuizView';
@@ -10,10 +10,40 @@ import { Cookie, Heart, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { setVolume, getVolume, playSelectSound, playPopSound, playSparkleSound } from './lib/sound';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'quiz' | 'quick' | 'encyclopedia'>('home');
-  const [quizMode, setQuizMode] = useState<QuizMode>('self');
-  const [answers, setAnswers] = useState<QuizAnswers | null>(null);
+  const [activeTab, setActiveTab] = useState<'home' | 'quiz' | 'quick' | 'encyclopedia'>(() => {
+    const saved = localStorage.getItem('oyatsu_activeTab');
+    return (saved === 'home' || saved === 'quiz' || saved === 'quick' || saved === 'encyclopedia') ? saved : 'home';
+  });
+  const [quizMode, setQuizMode] = useState<QuizMode>(() => {
+    const saved = localStorage.getItem('oyatsu_quizMode');
+    return (saved === 'self' || saved === 'friend') ? saved : 'self';
+  });
+  const [answers, setAnswers] = useState<QuizAnswers | null>(() => {
+    const saved = localStorage.getItem('oyatsu_answers');
+    try {
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   
+  
+  useEffect(() => {
+    localStorage.setItem('oyatsu_activeTab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem('oyatsu_quizMode', quizMode);
+  }, [quizMode]);
+
+  useEffect(() => {
+    if (answers) {
+      localStorage.setItem('oyatsu_answers', JSON.stringify(answers));
+    } else {
+      localStorage.removeItem('oyatsu_answers');
+    }
+  }, [answers]);
+
   const [isMuted, setIsMuted] = useState(true);
   const toggleMute = () => {
     if (isMuted) {

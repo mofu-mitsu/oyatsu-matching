@@ -5916,7 +5916,7 @@ Object.values(SNACK_TYPES).forEach((typeInfo) => {
     <!-- \u30D1\u30F3\u304F\u305A\u30EA\u30B9\u30C8 -->
     <nav class="px-5 pt-4 pb-2" aria-label="Breadcrumb">
       <ol class="flex items-center space-x-2 text-[10px] text-stone-500 font-bold">
-        <li><a href="/" class="hover:text-rose-500 transition-colors">\u30DB\u30FC\u30E0</a></li>
+        <li><a href="https://mofu-mitsu.github.io/" class="hover:text-rose-500 transition-colors">\u30DB\u30FC\u30E0</a></li>
         <li><span class="text-stone-300">/</span></li>
         <li><a href="/" class="hover:text-rose-500 transition-colors">16\u30BF\u30A4\u30D7\u304A\u3084\u3064\u8A3A\u65AD</a></li>
         <li><span class="text-stone-300">/</span></li>

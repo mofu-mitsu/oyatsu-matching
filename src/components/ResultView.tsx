@@ -9,6 +9,18 @@ import { MofumofuMascot } from './MofumofuMascot';
 import { Sparkles, ExternalLink, RefreshCw, ShoppingBag, Heart, Star, Sliders, Download, Share2 } from 'lucide-react';
 import { sendResultToGAS } from '../lib/gas';
 import { getFallbackItems } from '../data/fallbackItems';
+
+function dataURItoBlob(dataURI: string) {
+  const byteString = atob(dataURI.split(',')[1]);
+  const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([ab], { type: mimeString });
+}
+
 import { playPopSound } from '../lib/sound';
 
 interface ResultViewProps {
@@ -344,7 +356,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         pixelRatio: 2, useCORS: true, cacheBust: false,
       });
       
-      const blob = await (await fetch(dataUrl)).blob();
+      const blob = dataURItoBlob(dataUrl);
       const file = new File([blob], `oyatsu-${snackType.code}.png`, { type: 'image/png' });
 
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {

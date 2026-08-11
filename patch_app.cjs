@@ -1,24 +1,58 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/App.tsx', 'utf-8');
 
-const targetStr = `      {/* フッター */}
-      <footer className="relative z-10 border-t border-pink-100 bg-white/80 backdrop-blur-md py-6 text-center text-xs text-stone-500 space-y-2">`;
+// useState の初期値に localStorage を使うように変更
+code = code.replace(
+  /const \[activeTab, setActiveTab\] = useState<'home' \| 'quiz' \| 'quick' \| 'encyclopedia'>\('home'\);/,
+  `const [activeTab, setActiveTab] = useState<'home' | 'quiz' | 'quick' | 'encyclopedia'>(() => {
+    const saved = localStorage.getItem('oyatsu_activeTab');
+    return (saved === 'home' || saved === 'quiz' || saved === 'quick' || saved === 'encyclopedia') ? saved : 'home';
+  });`
+);
 
-const replaceStr = `      {/* ホームへ戻るボタン */}
-      <div className="relative z-10 flex justify-center pb-8 pt-4">
-        <a 
-          href="https://mofu-mitsu.github.io/"
-          className="group relative inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-sky-200 hover:border-sky-300 rounded-full text-sm font-bold text-sky-700 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
-        >
-          <span className="relative z-10 flex items-center gap-2">
-            🏠 ホームへ戻る (mofu-mitsu.github.io)
-          </span>
-          <div className="absolute inset-0 bg-sky-50 rounded-full scale-0 group-hover:scale-100 transition-transform origin-center duration-300 ease-out"></div>
-        </a>
-      </div>
+code = code.replace(
+  /const \[quizMode, setQuizMode\] = useState<QuizMode>\('self'\);/,
+  `const [quizMode, setQuizMode] = useState<QuizMode>(() => {
+    const saved = localStorage.getItem('oyatsu_quizMode');
+    return (saved === 'self' || saved === 'friend') ? saved : 'self';
+  });`
+);
 
-      {/* フッター */}
-      <footer className="relative z-10 border-t border-pink-100 bg-white/80 backdrop-blur-md py-6 text-center text-xs text-stone-500 space-y-2">`;
+code = code.replace(
+  /const \[answers, setAnswers\] = useState<QuizAnswers \| null>\(null\);/,
+  `const [answers, setAnswers] = useState<QuizAnswers | null>(() => {
+    const saved = localStorage.getItem('oyatsu_answers');
+    try {
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });`
+);
 
-code = code.replace(targetStr, replaceStr);
+// 状態が変化したときに localStorage に保存するための useEffect を追加
+const useEffectImport = "import React, { useState, useEffect } from 'react';";
+code = code.replace(/import React, \{ useState \} from 'react';/, useEffectImport);
+
+const useEffectHook = `
+  useEffect(() => {
+    localStorage.setItem('oyatsu_activeTab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem('oyatsu_quizMode', quizMode);
+  }, [quizMode]);
+
+  useEffect(() => {
+    if (answers) {
+      localStorage.setItem('oyatsu_answers', JSON.stringify(answers));
+    } else {
+      localStorage.removeItem('oyatsu_answers');
+    }
+  }, [answers]);
+`;
+
+code = code.replace(/const \[isMuted, setIsMuted\] = useState\(true\);/, useEffectHook + '\n  const [isMuted, setIsMuted] = useState(true);');
+
+// トップへ戻る、やり直す（handleReset など）でタブを home に戻すときに確実に保存される
 fs.writeFileSync('src/App.tsx', code);
