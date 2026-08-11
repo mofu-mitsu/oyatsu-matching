@@ -317,7 +317,7 @@ export function calculateSnackType(
   japaneseScore: number // 0..100 (>50 = Western(W), <=50 = Japanese(J))
 ): SnackTypeInfo {
   const s = sweetScore > 50 ? 'S' : 'Y';
-  const t = tenderScore > 50 ? 'T' : 'H';
+  const t = tenderScore >= 50 ? 'T' : 'H';
   const f = freshScore > 50 ? 'C' : 'F'; // 50超ならChilled(C), 以下ならFresh(F)
   const j = japaneseScore >= 50 ? 'W' : 'J'; // 50以上ならWestern(W), 未満ならJapanese(J)
 
