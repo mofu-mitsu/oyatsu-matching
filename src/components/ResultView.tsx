@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import html2canvas from 'html2canvas';
+import { domToPng } from 'modern-screenshot';
 import { QuizAnswers, RakutenItem, SnackTypeInfo } from '../types';
 import { SnackCharacterAvatar } from './SnackCharacterAvatar';
 import { calculateSnackType, SNACK_TYPES } from '../data/snackTypes';
@@ -318,8 +318,15 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     setIsCapturing(true);
     try {
       await new Promise(r => setTimeout(r, 150));
-      const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
-      const dataUrl = canvas.toDataURL('image/png', 0.95);
+      await domToPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1, cacheBust: true, fetchRequestInit: { cache: 'no-cache' } });
+      await new Promise(r => setTimeout(r, 150));
+      const dataUrl = await domToPng(node, {
+        quality: 0.95,
+        backgroundColor: '#ffffff',
+        pixelRatio: 2,
+        cacheBust: true,
+        fetchRequestInit: { cache: 'no-cache' }
+      });
       
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
@@ -346,8 +353,15 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     setIsCapturing(true);
     try {
       await new Promise(r => setTimeout(r, 150));
-      const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
-      const dataUrl = canvas.toDataURL('image/png', 0.95);
+      await domToPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1, cacheBust: true, fetchRequestInit: { cache: 'no-cache' } });
+      await new Promise(r => setTimeout(r, 150));
+      const dataUrl = await domToPng(node, {
+        quality: 0.95,
+        backgroundColor: '#ffffff',
+        pixelRatio: 2,
+        cacheBust: true,
+        fetchRequestInit: { cache: 'no-cache' }
+      });
       
       const blob = dataURItoBlob(dataUrl);
       const file = new File([blob], `oyatsu-${snackType.code}.png`, { type: 'image/png' });
@@ -372,6 +386,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       }
     } catch (err) {
       console.error('シェアに失敗しました:', err);
+      alert('シェア画像の作成に失敗しちゃいました💦');
     } finally {
       setIsCapturing(false);
     }
