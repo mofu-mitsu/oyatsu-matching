@@ -108,6 +108,28 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
   const [isPureLSI, setIsPureLSI] = useState<boolean>(false);
   const [alternateType, setAlternateType] = useState<SnackTypeInfo | null>(null);
 
+  const [rakutenImageUri, setRakutenImageUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (recommendedItem?.imageUrl) {
+      // Fetch rakuten image and convert to data URI to prevent html-to-image CORS/loading issues
+      fetch('/api/image-proxy?url=' + encodeURIComponent(recommendedItem.imageUrl))
+        .then(res => res.blob())
+        .then(blob => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setRakutenImageUri(reader.result as string);
+          };
+          reader.readAsDataURL(blob);
+        })
+        .catch(err => {
+          console.error('Failed to proxy Rakuten image', err);
+          setRakutenImageUri(recommendedItem.imageUrl);
+        });
+    }
+  }, [recommendedItem?.imageUrl]);
+
+
   useEffect(() => {
     // tenderスコアの計算
     const tenderCount = answers.textures.filter(t => ['ふわふわ', 'もっちり', 'とろとろ', 'ほろほろ'].includes(t)).length;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import characterMochiImg from '../assets/images/snack_character_mochi_1786022937215.jpg';
 import characterChiffonImg from '../assets/images/snack_character_chiffon_1786022949723.jpg';
 import characterSenbeiImg from '../assets/images/snack_character_senbei_1786022975261.jpg';
@@ -51,21 +51,42 @@ export const SnackCharacterAvatar: React.FC<SnackCharacterAvatarProps> = ({
   size = 'md',
   className = '',
 }) => {
+
   const sizeMap = {
     sm: 'w-12 h-12',
     md: 'w-20 h-20',
     lg: 'w-32 h-32',
     xl: 'w-44 h-44',
   };
-
   const dimension = sizeMap[size];
   const aiGeneratedImg = AI_CHARACTER_IMAGES[typeId];
+  
+  const [dataUri, setDataUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (aiGeneratedImg) {
+      fetch(aiGeneratedImg)
+        .then(res => res.blob())
+        .then(blob => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setDataUri(reader.result);
+          };
+          reader.readAsDataURL(blob);
+        })
+        .catch(err => {
+          console.error('Image fetch error', err);
+          setDataUri(aiGeneratedImg);
+        });
+    }
+  }, [aiGeneratedImg]);
+
 
   if (aiGeneratedImg) {
     return (
       <div className={`relative inline-flex items-center justify-center ${dimension} ${className} overflow-hidden rounded-2xl border-2 border-amber-200/80 shadow-md bg-white p-0.5`} id={`character-avatar-${typeId}`}>
         <img
-          src={aiGeneratedImg}
+          src={dataUri || aiGeneratedImg}
           alt={`Character ${typeId}`}
           className="w-full h-full object-cover rounded-2xl hover:scale-105 transition-transform duration-300"
           referrerPolicy="no-referrer"

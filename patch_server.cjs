@@ -1,29 +1,31 @@
 const fs = require('fs');
 let code = fs.readFileSync('server.ts', 'utf-8');
 
-const target1 = `const RAKUTEN_APP_ID = process.env.RAKUTEN_APP_ID || '1055088369869282145';
-const RAKUTEN_AFFILIATE_ID = process.env.RAKUTEN_AFFILIATE_ID || '3d94ea21.0d257908.3d94ea22.0ed11c6e';`;
+const proxyRoute = `
+// 3. 画像プロキシAPI (CORS回避用)
+app.get('/api/image-proxy', async (req, res) => {
+  try {
+    const imageUrl = req.query.url as string;
+    if (!imageUrl) return res.status(400).send('No url provided');
+    
+    const response = await fetch(imageUrl);
+    if (!response.ok) throw new Error('Failed to fetch image');
+    
+    const buffer = await response.arrayBuffer();
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    console.error('Image proxy error:', error);
+    res.status(500).send('Error proxying image');
+  }
+});
+`;
 
-const replace1 = `const RAKUTEN_APP_ID = process.env.RAKUTEN_APP_ID || '1055088369869282145';
-const RAKUTEN_ACCESS_KEY = process.env.RAKUTEN_ACCESS_KEY || '';
-const RAKUTEN_AFFILIATE_ID = process.env.RAKUTEN_AFFILIATE_ID || '3d94ea21.0d257908.3d94ea22.0ed11c6e';`;
-
-const target2 = `      const apiUrl = \`https://app.rakuten.co.jp/services/api/IchibaItem/Search/20170706?\${params.toString()}\`;
-
-      const response = await fetch(apiUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-      });`;
-
-const replace2 = `      const apiUrl = \`https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701?\${params.toString()}\`;
-
-      const headers: any = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' };
-      if (RAKUTEN_ACCESS_KEY) {
-        headers['accessKey'] = RAKUTEN_ACCESS_KEY;
-      }
-
-      const response = await fetch(apiUrl, {
-        headers,
-      });`;
-
-code = code.replace(target1, replace1).replace(target2, replace2);
-fs.writeFileSync('server.ts', code);
+if (!code.includes('/api/image-proxy')) {
+  code = code.replace(/\/\/ -------------------------------------------------------------\n\/\/ Vite Middleware/, proxyRoute + '\n// -------------------------------------------------------------\n// Vite Middleware');
+  fs.writeFileSync('server.ts', code);
+}

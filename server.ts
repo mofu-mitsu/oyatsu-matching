@@ -151,6 +151,29 @@ function formatRakutenItem(item: any) {
   };
 }
 
+
+// 3. 画像プロキシAPI (CORS回避用)
+app.get('/api/image-proxy', async (req, res) => {
+  try {
+    const imageUrl = req.query.url as string;
+    if (!imageUrl) return res.status(400).send('No url provided');
+    
+    const response = await fetch(imageUrl);
+    if (!response.ok) throw new Error('Failed to fetch image');
+    
+    const buffer = await response.arrayBuffer();
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    console.error('Image proxy error:', error);
+    res.status(500).send('Error proxying image');
+  }
+});
+
 // -------------------------------------------------------------
 // Vite Middleware / Static serve
 // -------------------------------------------------------------
