@@ -5429,31 +5429,32 @@ export const getFallbackItems = (
 
   const expandedFlavors = expandKeywords(flavors);
 
-  // まず嫌いなものを除外
-  let availableItems = FALLBACK_ITEMS;
+  // 1. 嫌いなものを厳密に除外
+  let availableItems = [...FALLBACK_ITEMS];
   if (dislikes.length > 0) {
+    const normDislikes = dislikes.map(d => d.toLowerCase().trim()).filter(Boolean);
     availableItems = availableItems.filter(item => {
       const text = item.itemName.toLowerCase();
-      return !dislikes.some(dis => text.includes(dis.toLowerCase().trim()));
+      return !normDislikes.some(dis => text.includes(dis));
     });
   }
 
-  // 予算で除外
-  if (minPrice !== undefined) {
+  // 2. 予算で厳密に除外 (minPrice, maxPrice)
+  if (minPrice !== undefined && minPrice > 0) {
     availableItems = availableItems.filter(item => item.itemPrice >= minPrice);
   }
-  if (maxPrice !== undefined) {
+  if (maxPrice !== undefined && maxPrice > 0) {
     availableItems = availableItems.filter(item => item.itemPrice <= maxPrice);
   }
 
-  // シャッフルしてランダム性を確保
+  // シャッフルして毎回ベースの順序を変える
   availableItems = shuffleArray(availableItems);
 
-  // 1. まずタイプコードにダイレクトに合致する商品を検索
+  // 3. タイプ合致検索
   let matched = availableItems.filter(item => item.targetTypes.includes(typeCode));
 
-  // 2. もしタイプ合致商品が足りない場合、同系統で補完
-  if (matched.length < 6) {
+  // 4. 不足時は同系統で補完
+  if (matched.length < 12) {
     const sameCategory = availableItems.filter(item => {
       const itemIsSweet = item.targetTypes.some(t => t.startsWith('S'));
       const itemIsJapanese = item.targetTypes.some(t => t.endsWith('J'));
@@ -5463,74 +5464,53 @@ export const getFallbackItems = (
       const styleMatch = (isJapanese && itemIsJapanese) || (isWestern && itemIsWestern);
       const notIncluded = !matched.some(m => m.itemName === item.itemName);
       
-      let flavorScore = 0;
-      expandedFlavors.forEach(f => {
-        if (item.itemName.includes(f)) flavorScore += 15;
-      });
-
-      // 少しのランダムな揺らぎを加えることで毎回表示されるアイテムを変える
-      (item as any)._matchScore = (sweetMatch ? 10 : 0) + (styleMatch ? 100 : -100) + flavorScore + Math.random() * 5;
-      
-      return sweetMatch && notIncluded;
+      return (sweetMatch || styleMatch) && notIncluded;
     });
-    
-    sameCategory.sort((a: any, b: any) => b._matchScore - a._matchScore);
     matched = [...matched, ...sameCategory];
   }
 
-  // 3. 全体に対してフレーバースコアを計算して再ソート
+  // 5. スコアリング (フレーバー指定がある場合は超最優先)
   matched.forEach(item => {
     let score = 0;
+
+    // フレーバーマッチボーナス
+    let flavorHit = false;
     expandedFlavors.forEach(f => {
-      if (item.itemName.includes(f)) score += 20;
+      if (item.itemName.includes(f)) {
+        score += 3000; // フレーバー指定がある場合は非常に大きなスコアを付与
+        flavorHit = true;
+      }
     });
-    // STFWの場合はシフォンケーキやバウムクーヘンを優先する（キーワードマップで拡張済みだが念のため）
-    if (typeCode === 'STFW' && (item.itemName.includes('シフォン') || item.itemName.includes('バウム') || item.itemName.includes('バーム'))) {
-      score += 30;
-    }
-    // 単一タイプマッチを優先（複数タイプより専用タイプを優先）
+
+    // タイプ直接マッチボーナス
     if (item.targetTypes.includes(typeCode)) {
-      score += 1000; // 基本スコア
-      if (item.targetTypes.length === 1) score += 200; // 1タイプ専用ならボーナス
-      if (item.targetTypes.length === 2) score += 100;
+      score += 1000;
+      if (item.targetTypes.length === 1) score += 200;
     } else {
-      const isJapanese = typeCode.endsWith('J');
-      const isWestern = typeCode.endsWith('W');
       const itemIsJapanese = item.targetTypes.some(t => t.endsWith('J'));
       const itemIsWestern = item.targetTypes.some(t => t.endsWith('W'));
       if ((isJapanese && itemIsJapanese) || (isWestern && itemIsWestern)) {
         score += 500;
-      } else {
-        score -= 500;
       }
     }
 
-    // 毎回結果が少し変わるようにランダム要素を加算
-    (item as any)._finalScore = score + Math.random() * 15;
+    // STFW向けの特定スイーツ優遇
+    if (typeCode === 'STFW' && (item.itemName.includes('シフォン') || item.itemName.includes('バウム') || item.itemName.includes('バーム'))) {
+      score += 100;
+    }
+
+    // ランダム揺らぎ（毎回違う順番や組み合わせを出すため）
+    (item as any)._finalScore = score + Math.random() * 80;
   });
 
-  // 4. 予算フィルタがある場合、スコアと価格を組み合わせてソート
-  if ((minPrice && minPrice > 0) || (maxPrice && maxPrice > 0)) {
-    const minP = minPrice || 0;
-    const maxP = maxPrice || 999999;
+  // スコア順にソート
+  matched.sort((a, b) => ((b as any)._finalScore || 0) - ((a as any)._finalScore || 0));
 
-    matched.sort((a, b) => {
-      const aScore = (a as any)._finalScore || 0;
-      const bScore = (b as any)._finalScore || 0;
-      
-      const aInPrice = a.itemPrice >= minP && a.itemPrice <= maxP;
-      const bInPrice = b.itemPrice >= minP && b.itemPrice <= maxP;
-      
-      if (aInPrice && !bInPrice) return -1;
-      if (!aInPrice && bInPrice) return 1;
-      
-      return bScore - aScore;
-    });
-  } else {
-    matched.sort((a, b) => ((b as any)._finalScore || 0) - ((a as any)._finalScore || 0));
-  }
+  // 結果返却（上位12件からランダムシャッフルして上位6件を返す）
+  const topCandidates = matched.slice(0, 12);
+  const shuffledTop = shuffleArray(topCandidates);
 
-  return matched.slice(0, 6).map(({ targetTypes, ...item }) => {
+  return shuffledTop.slice(0, 6).map(({ targetTypes, ...item }) => {
     const { _matchScore, _finalScore, ...cleanItem } = item as any;
     return cleanItem;
   });

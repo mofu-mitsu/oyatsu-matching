@@ -33,14 +33,14 @@ app.get('/api/rakuten/search', async (req, res) => {
     // typeCode for fallback
     const typeCode = req.query.typeCode as string || 'STFW';
 
-    // 複数フレーバーを入れるとAND検索になってヒットしないため、先頭の1つだけを利用する... ではなく、指定されたものを順番に削ってリトライする
+    // 複数フレーバーを入れるとAND検索になってヒットしないため、フレーバーを付加して検索
     let flavors = req.query.flavors ? (req.query.flavors as string).split(',').filter(Boolean) : [];
     
     let data = null;
     let fallbackNeeded = false;
     let searchKeyword = keyword;
     
-    // フレーバーを順番に削りながら検索
+    // フレーバーがある場合はフレーバーを含めて検索、ダメなら単独で検索
     for (let i = flavors.length; i >= 0; i--) {
       const currentFlavors = flavors.slice(0, i);
       searchKeyword = currentFlavors.length > 0 ? `${currentFlavors.join(' ')} ${keyword}` : keyword;
@@ -51,7 +51,7 @@ app.get('/api/rakuten/search', async (req, res) => {
         applicationId: RAKUTEN_APP_ID,
         affiliateId: RAKUTEN_AFFILIATE_ID,
         keyword: searchKeyword,
-        hits: '12',
+        hits: '30',
         format: 'json',
         sort: '+reviewAverage',
       });
@@ -69,49 +69,78 @@ app.get('/api/rakuten/search', async (req, res) => {
         headers['accessKey'] = RAKUTEN_ACCESS_KEY;
       }
 
-      const response = await fetch(apiUrl, {
-        headers,
-      });
+      const response = await fetch(apiUrl, { headers });
 
       if (!response.ok) {
         console.warn(`⚠️ 楽天APIエラー (${response.status})`);
-        // API自体がエラーを返した場合は、リトライしても無駄な可能性が高いのでループを抜ける
         fallbackNeeded = true;
         break;
       }
 
       data = await response.json();
       if (data && data.Items && data.Items.length > 0) {
-        // 見つかったらループ終了
         fallbackNeeded = false;
         break;
       }
-      // 見つからなかったら次のループ（フレーバーを1つ減らす）へ
     }
 
     if (fallbackNeeded || !data || !data.Items || data.Items.length === 0) {
       console.warn('⚠️ 楽天APIから取得できなかったため、フォールバックデータを返却します。');
-      // 最終フォールバック (ローカルのファイルから抽出)
-      const fallbackItems = getFallbackItems(typeCode, minPrice, maxPrice, req.query.flavors ? (req.query.flavors as string).split(',').filter(Boolean) : [], dislikes);
+      const fallbackItems = getFallbackItems(typeCode, minPrice, maxPrice, flavors, dislikes);
       return res.json({ items: fallbackItems, keywordUsed: 'おすすめのおやつ', totalCount: fallbackItems.length });
     }
 
-    // NGキーワードフィルタリング
     let items = data.Items.map((entry: any) => formatRakutenItem(entry.Item));
 
+    // 1. 予算フィルタを厳密適用 (API結果から漏れたものを除外)
+    if (minPrice && minPrice > 0) {
+      items = items.filter((item: any) => item.itemPrice >= minPrice);
+    }
+    if (maxPrice && maxPrice > 0) {
+      items = items.filter((item: any) => item.itemPrice <= maxPrice);
+    }
+
+    // 2. NGキーワード（嫌いなもの）フィルタリング
     if (dislikes.length > 0) {
+      const normDislikes = dislikes.map(d => d.toLowerCase().trim()).filter(Boolean);
       items = items.filter((item: any) => {
         const text = `${item.itemName} ${item.itemCaption}`.toLowerCase();
-        return !dislikes.some((dislike) => text.includes(dislike.toLowerCase().trim()));
+        return !normDislikes.some((dislike) => text.includes(dislike));
       });
+    }
+
+    // 3. フレーバー優先度付け & スコアリング + ランダム性追加
+    if (flavors.length > 0) {
+      items.sort((a: any, b: any) => {
+        const aText = `${a.itemName} ${a.itemCaption}`;
+        const bText = `${b.itemName} ${b.itemCaption}`;
+        
+        let aMatchCount = 0;
+        let bMatchCount = 0;
+        
+        flavors.forEach(f => {
+          if (aText.includes(f)) aMatchCount++;
+          if (bText.includes(f)) bMatchCount++;
+        });
+
+        // マッチ数が違う場合はフレーバー重視
+        if (bMatchCount !== aMatchCount) {
+          return bMatchCount - aMatchCount;
+        }
+        // マッチ数が同じ場合は若干ランダムにシャッフル
+        return Math.random() - 0.5;
+      });
+    } else {
+      // フレーバー指定が無い場合はランダムにシャッフルして多様な商品を表示
+      items = items.sort(() => Math.random() - 0.5);
     }
 
     // 上位6件に絞り込み
     const finalItems = items.slice(0, 6);
 
-    // NGワード弾いた結果0件になってしまった場合のフォールバック
+    // NGワードや予算弾きで0件になってしまった場合のフォールバック
     if (finalItems.length === 0) {
-      const fallbackItems = getFallbackItems(typeCode, minPrice, maxPrice, req.query.flavors ? (req.query.flavors as string).split(',').filter(Boolean) : [], dislikes);
+      const fallbackItems = getFallbackItems(typeCode, minPrice, maxPrice, flavors, dislikes);
       return res.json({ items: fallbackItems, keywordUsed: 'おすすめのおやつ', totalCount: fallbackItems.length });
     }
 

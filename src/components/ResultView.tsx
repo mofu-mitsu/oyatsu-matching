@@ -158,6 +158,10 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
        // 温度感が半々
        const altF = resultType.code[2] === 'F' ? 100 : 0;
        altType = calculateSnackType(answers.sweetValue, tenderScore, altF, answers.japaneseValue);
+    } else if (tenderScore === 50) {
+       // 食感が半々
+       const altT = resultType.code[1] === 'T' ? 0 : 100;
+       altType = calculateSnackType(answers.sweetValue, altT, answers.freshValue, answers.japaneseValue);
     }
     
     // LSI回避などで同一になった場合は無効化
@@ -239,13 +243,13 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         mainKw = customSearchKeyword.trim();
       }
 
-      // 予算計算
-      if (selectedBudget === '500') { minP = 0; maxP = 800; }
-      else if (selectedBudget === '1000') { minP = 500; maxP = 1800; }
-      else if (selectedBudget === '3000') { minP = 1500; maxP = 3800; }
-      else if (selectedBudget === '5000') { minP = 3000; maxP = 6000; }
-      else if (selectedBudget === '10000') { minP = 5000; maxP = 12000; }
-
+      // 予算計算 (上限価格を厳密に設定)
+      if (selectedBudget === '500') { minP = 0; maxP = 500; }
+      else if (selectedBudget === '1000') { minP = 0; maxP = 1000; }
+      else if (selectedBudget === '3000') { minP = 0; maxP = 3000; }
+      else if (selectedBudget === '5000') { minP = 0; maxP = 5000; }
+      else if (selectedBudget === '10000') { minP = 0; maxP = 10000; }
+      else { minP = 0; maxP = 0; }
 
       const params = new URLSearchParams({
         keyword: mainKw,
@@ -257,7 +261,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       if (allDislikes.length > 0) params.append('dislikes', allDislikes.join(','));
 
       const res = await fetch(`/api/rakuten/search?${params.toString()}`);
-      let combined = [];
+      let combined: any[] = [];
       let usedKw = mainKw;
       if (res.ok) {
         const data = await res.json();
@@ -268,41 +272,46 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         console.warn('API returned error');
       }
 
-      
-      // APIが取得できたものに関わらず、常にfallbackから最低3つは追加する（最大9つになるように）
-      const fallbacks = getFallbackItems(typeInfo.id, 0, 99999, [], []);
+      // フォールバックデータも正確な予算・フレーバー・嫌いなもの条件で取得
+      const fallbacks = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes);
       const shuffledFallbacks = fallbacks.sort(() => 0.5 - Math.random());
       const seenUrls = new Set(combined.map((item: any) => item.itemUrl));
       
-      let fallbackAddedCount = 0;
-      
-      // まずAPIが6件未満なら、fallbackを足して6件にする
+      // APIが6件未満なら、条件を満たすfallbackを追加して最低6件にする
       for (const fb of shuffledFallbacks) {
         if (combined.length >= 6) break;
         if (!seenUrls.has(fb.itemUrl)) {
           combined.push(fb);
           seenUrls.add(fb.itemUrl);
-          fallbackAddedCount++;
-        }
-      }
-      
-      // さらに、まだ使っていないfallbackからランダムに3件追加する (合計最大9件)
-      let extraAdded = 0;
-      for (const fb of shuffledFallbacks) {
-        if (extraAdded >= 3 || combined.length >= 9) break;
-        if (!seenUrls.has(fb.itemUrl)) {
-          combined.push(fb);
-          seenUrls.add(fb.itemUrl);
-          extraAdded++;
         }
       }
 
-      setItems(combined);
+      // 最終ガード: 予算上限・下限、および嫌いなものの最終フィルタ
+      if (maxP > 0) {
+        combined = combined.filter((item: any) => item.itemPrice <= maxP);
+      }
+      if (minP > 0) {
+        combined = combined.filter((item: any) => item.itemPrice >= minP);
+      }
+      if (allDislikes.length > 0) {
+        const normDislikes = allDislikes.map(d => d.toLowerCase().trim()).filter(Boolean);
+        combined = combined.filter((item: any) => {
+          const text = `${item.itemName} ${item.itemCaption || ''}`.toLowerCase();
+          return !normDislikes.some(dis => text.includes(dis));
+        });
+      }
+
+      // もしフィルタで完全にゼロ件になってしまった場合は、fallbackから再度抽出
+      if (combined.length === 0) {
+        combined = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes);
+      }
+
+      setItems(combined.slice(0, 9));
       setKeywordUsed(usedKw);
     } catch (err) {
       console.error('Rakuten fetch error:', err);
       console.log('フォールバックデータを使用します');
-      const fallbacks = getFallbackItems(typeInfo.id, 0, 99999, [], []);
+      const fallbacks = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes);
       setItems(fallbacks);
       setKeywordUsed(mainKw);
     } finally {
