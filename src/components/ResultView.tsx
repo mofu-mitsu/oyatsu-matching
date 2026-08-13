@@ -510,8 +510,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       {/* 診断タイプ発表カード */}
       <div className={`rounded-3xl p-6 sm:p-8 border ${snackType.color.border} ${snackType.color.bg} shadow-xl relative overflow-hidden`} id="snack-result-card">
         {isCapturing && (
-          <div className="flex justify-end mb-2 relative z-20">
-            <span className="text-[11px] font-bold text-stone-500 bg-white/95 px-3 py-1 rounded-full border border-stone-200 shadow-2xs">
+          <div className="absolute top-4 right-4 z-20">
+            <span className="text-[11px] font-black text-amber-900 bg-white/95 px-3 py-1 rounded-full border border-amber-300 shadow-sm whitespace-nowrap">
               16タイプおやつ診断
             </span>
           </div>
@@ -521,17 +521,17 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
             <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white/95 shadow-md border-2 border-amber-200 flex items-center justify-center p-2 flex-shrink-0 relative overflow-hidden my-1">
               <SnackCharacterAvatar typeId={snackType.id} size="lg" />
             </div>
-            <span className="text-xs font-black text-amber-900 mt-2 bg-amber-100/90 px-3 py-1 rounded-full border border-amber-300 shadow-2xs">
+            <span className="text-xs font-black text-amber-900 mt-2 bg-amber-100/90 px-3 py-1 rounded-full border border-amber-300 shadow-2xs whitespace-nowrap">
               {snackType.characterEmoji} {snackType.characterName}
             </span>
           </div>
 
           <div className="space-y-2 text-center sm:text-left flex-1">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-              <span className={`text-xs font-extrabold px-3 py-1 rounded-full ${snackType.color.badge}`}>
+              <span className={`text-xs font-extrabold px-3 py-1 rounded-full whitespace-nowrap ${snackType.color.badge}`}>
                 TYPE: {snackType.code}
               </span>
-              <span className="text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-200">
+              <span className="text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-200 whitespace-nowrap">
                 キャラクター: {snackType.characterName}
               </span>
             </div>
@@ -599,7 +599,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
                     <SnackCharacterAvatar typeId={alternateType.id} size="sm" />
                   </div>
                   <div className="flex-1">
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 whitespace-nowrap">
                       {alternateType.code}
                     </span>
                     <p className="text-xs font-extrabold text-stone-800">{alternateType.title}</p>

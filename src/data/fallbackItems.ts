@@ -5460,47 +5460,38 @@ export const getFallbackItems = (
     availableItems = availableItems.filter(item => item.itemPrice <= maxPrice);
   }
 
-  // シャッフルして毎回ベースの順序を変える
-  availableItems = shuffleArray(availableItems);
+  // 3. targetTypes に指定タイプ (例: STFW) が含まれている商品を絶対最優先抽出！
+  let typeStrictItems = availableItems.filter(item => item.targetTypes.includes(typeCode));
 
-  // 3. フレーバー指定がある場合は、フレーバーに一致する商品を全FALLBACKデータから最優先で収集
-  let flavorMatches: typeof availableItems = [];
-  if (expandedFlavors.length > 0) {
-    flavorMatches = availableItems.filter(item => 
-      expandedFlavors.some(f => item.itemName.includes(f))
-    );
-  }
-
-  // 4. タイプ合致検索
-  let typeMatched = availableItems.filter(item => 
-    item.targetTypes.includes(typeCode) && !flavorMatches.some(fm => fm.itemName === item.itemName)
-  );
-
-  // 5. 不足時は同系統で補完
-  if (flavorMatches.length + typeMatched.length < 12) {
+  // 不足時は同系統 (甘い・洋風/和風) で補完
+  if (typeStrictItems.length < 6) {
     const sameCategory = availableItems.filter(item => {
+      if (typeStrictItems.some(m => m.itemName === item.itemName)) return false;
       const itemIsSweet = item.targetTypes.some(t => t.startsWith('S'));
       const itemIsJapanese = item.targetTypes.some(t => t.endsWith('J'));
       const itemIsWestern = item.targetTypes.some(t => t.endsWith('W'));
       
       const sweetMatch = itemIsSweet === isSweet;
       const styleMatch = (isJapanese && itemIsJapanese) || (isWestern && itemIsWestern);
-      const notIncluded = !flavorMatches.some(m => m.itemName === item.itemName) &&
-                          !typeMatched.some(m => m.itemName === item.itemName);
-      
-      return (sweetMatch || styleMatch) && notIncluded;
+      return sweetMatch && styleMatch;
     });
-    typeMatched = [...typeMatched, ...sameCategory];
+    typeStrictItems = [...typeStrictItems, ...sameCategory];
   }
 
-  // フレーバー一致アイテムとタイプ一致アイテムを別々にシャッフル
-  const shuffledFlavors = shuffleArray(flavorMatches);
-  const shuffledTypes = shuffleArray(typeMatched);
+  // 4. フレーバー指定がある場合、対象タイプの候補の中からフレーバー一致品を最優先ソート
+  if (expandedFlavors.length > 0) {
+    typeStrictItems.sort((a, b) => {
+      const aHas = expandedFlavors.some(f => a.itemName.includes(f));
+      const bHas = expandedFlavors.some(f => b.itemName.includes(f));
+      if (aHas && !bHas) return -1;
+      if (!aHas && bHas) return 1;
+      return 0;
+    });
+  } else {
+    typeStrictItems = shuffleArray(typeStrictItems);
+  }
 
-  // フレーバー一致商品を一番先頭にし、残りをタイプ一致商品で埋める
-  const resultCandidates = [...shuffledFlavors, ...shuffledTypes].slice(0, 6);
-
-  return resultCandidates.map(({ targetTypes, ...item }) => {
+  return typeStrictItems.slice(0, 6).map(({ targetTypes, ...item }) => {
     const { _matchScore, _finalScore, ...cleanItem } = item as any;
     return cleanItem;
   });
