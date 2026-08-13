@@ -92,6 +92,23 @@ app.get('/api/rakuten/search', async (req, res) => {
 
     let items = data.Items.map((entry: any) => formatRakutenItem(entry.Item));
 
+    // 0. 非食品（服、ケース、本、コスメ、美容液、靴ケア用品など）を除外
+    const nonFoodKeywords = [
+      'シャツ', 'tシャツ', 'パンツ', 'ケース', 'カバー', 'バッグ', '本', '雑誌', 'cd', 'dvd',
+      'コスメ', '美容液', '化粧', '化粧品', '化粧水', '乳液', '美容', 'スキンケア', 'フェイスパック',
+      'ハンドクリーム', 'ボディクリーム', 'リップクリーム', '靴クリーム', 'シューケア', 'シューポリッシュ',
+      'レザーケア', '革お手入れ', 'クレンジング', '洗顔', 'シャンプー', 'コンディショナー', 'トリートメント',
+      'せっけん', '石鹸', 'ボディソープ', 'フレグランス', '香水', 'ネイル', 'マニキュア', 'リップグロス',
+      '口紅', 'ファンデーション', 'パウダー', 'コンシーラー', 'アイシャドウ', 'マスカラ', 'アイライナー',
+      '洗剤', '柔軟剤', '消臭', '芳香剤', 'ローション', 'エッセンス', 'フィギュア', 'ぬいぐるみ',
+      'タオル', 'キーホルダー', 'アクスタ', 'ストラップ', '靴', 'サンダル', 'ソックス', '服', 'ドレス',
+      'アパレル', 'スマホ', 'iPhone', 'フィルム', 'スタンド', '充電器', 'イヤホン', 'ポスター'
+    ];
+    items = items.filter((item: any) => {
+      const text = `${item.itemName} ${item.itemCaption || ''}`.toLowerCase();
+      return !nonFoodKeywords.some(kw => text.includes(kw.toLowerCase()));
+    });
+
     // 1. 予算フィルタを厳密適用 (API結果から漏れたものを除外)
     if (minPrice && minPrice > 0) {
       items = items.filter((item: any) => item.itemPrice >= minPrice);

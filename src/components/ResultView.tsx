@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { domToPng } from 'modern-screenshot';
+import { toPng } from 'html-to-image';
+import html2canvas from 'html2canvas';
 import { QuizAnswers, RakutenItem, SnackTypeInfo } from '../types';
 import { SnackCharacterAvatar } from './SnackCharacterAvatar';
 import { calculateSnackType, SNACK_TYPES } from '../data/snackTypes';
@@ -238,7 +239,33 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         if (answers.mood === '夜食') mainKw = `おつまみ ${mainKw}`; 
       }
 
-      // カスタムキーワード指定があれば優先
+      // 食感 (textures) に基づくキーワード強化
+      if (answers.textures && answers.textures.length > 0 && !customSearchKeyword.trim()) {
+        const textureKwMap: Record<string, string[]> = {
+          'サクサク': ['クッキー', 'パイ', 'サブレ', 'ビスケット'],
+          'ザクザク': ['クッキー', 'クランチ', 'パイ'],
+          'カリカリ': ['かりんとう', 'ナッツ', 'フロランタン'],
+          'パリパリ': ['最中', 'せんべい', 'チップス'],
+          'ふわふわ': ['シフォンケーキ', 'バウムクーヘン', 'カステラ'],
+          'もっちり': ['大福', '和菓子', 'わらび餅'],
+          'とろとろ': ['プリン', 'ゼリー', 'ムース'],
+          'ほろほろ': ['クッキー', 'タルト', 'フィナンシェ'],
+        };
+        
+        let textureKwList: string[] = [];
+        answers.textures.forEach(t => {
+          if (textureKwMap[t]) {
+            textureKwList.push(...textureKwMap[t]);
+          }
+        });
+
+        if (textureKwList.length > 0) {
+          const selectedTexKw = textureKwList[Math.floor(Math.random() * textureKwList.length)];
+          mainKw = `${selectedTexKw} ${mainKw}`;
+        }
+      }
+
+      // カスタムキーワード指定があれば最優先
       if (customSearchKeyword.trim()) {
         mainKw = customSearchKeyword.trim();
       }
@@ -261,25 +288,40 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       if (allDislikes.length > 0) params.append('dislikes', allDislikes.join(','));
 
       const res = await fetch(`/api/rakuten/search?${params.toString()}`);
-      let combined: any[] = [];
+      let apiItems: any[] = [];
       let usedKw = mainKw;
       if (res.ok) {
         const data = await res.json();
-        const apiItems = data.items || [];
-        combined = [...apiItems];
+        apiItems = data.items || [];
         usedKw = data.keywordUsed || mainKw;
       } else {
         console.warn('API returned error');
       }
 
-      // フォールバックデータも正確な予算・フレーバー・嫌いなもの条件で取得
+      // 1. APIからの取得結果（最大6件）
+      const mainApiList = apiItems.slice(0, 6);
+
+      // 2. フォールバックデータも正確な予算・フレーバー・嫌いなもの条件で取得
       const fallbacks = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes);
       const shuffledFallbacks = fallbacks.sort(() => 0.5 - Math.random());
-      const seenUrls = new Set(combined.map((item: any) => item.itemUrl));
-      
-      // APIが6件未満なら、条件を満たすfallbackを追加して最低6件にする
+
+      const combined: any[] = [...mainApiList];
+      const seenUrls = new Set(mainApiList.map((item: any) => item.itemUrl));
+
+      // 3. Fallbackから常に3枠追加（APIから6件取得できていてもFallbackから3件を追加して合計9件に）
+      let fbAddedCount = 0;
       for (const fb of shuffledFallbacks) {
-        if (combined.length >= 6) break;
+        if (!seenUrls.has(fb.itemUrl)) {
+          combined.push(fb);
+          seenUrls.add(fb.itemUrl);
+          fbAddedCount++;
+          if (fbAddedCount >= 3) break;
+        }
+      }
+
+      // 4. もし合計で9件未満なら、Fallbackから補填して確実に9件にする
+      for (const fb of shuffledFallbacks) {
+        if (combined.length >= 9) break;
         if (!seenUrls.has(fb.itemUrl)) {
           combined.push(fb);
           seenUrls.add(fb.itemUrl);
@@ -287,26 +329,27 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       }
 
       // 最終ガード: 予算上限・下限、および嫌いなものの最終フィルタ
+      let finalFiltered = combined;
       if (maxP > 0) {
-        combined = combined.filter((item: any) => item.itemPrice <= maxP);
+        finalFiltered = finalFiltered.filter((item: any) => item.itemPrice <= maxP);
       }
       if (minP > 0) {
-        combined = combined.filter((item: any) => item.itemPrice >= minP);
+        finalFiltered = finalFiltered.filter((item: any) => item.itemPrice >= minP);
       }
       if (allDislikes.length > 0) {
         const normDislikes = allDislikes.map(d => d.toLowerCase().trim()).filter(Boolean);
-        combined = combined.filter((item: any) => {
+        finalFiltered = finalFiltered.filter((item: any) => {
           const text = `${item.itemName} ${item.itemCaption || ''}`.toLowerCase();
           return !normDislikes.some(dis => text.includes(dis));
         });
       }
 
       // もしフィルタで完全にゼロ件になってしまった場合は、fallbackから再度抽出
-      if (combined.length === 0) {
-        combined = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes);
+      if (finalFiltered.length === 0) {
+        finalFiltered = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes);
       }
 
-      setItems(combined.slice(0, 9));
+      setItems(finalFiltered.slice(0, 9));
       setKeywordUsed(usedKw);
     } catch (err) {
       console.error('Rakuten fetch error:', err);
@@ -319,6 +362,26 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     }
   };
 
+  const captureNodeToDataUrl = async (node: HTMLElement): Promise<string> => {
+    try {
+      return await toPng(node, {
+        quality: 0.95,
+        backgroundColor: '#ffffff',
+        pixelRatio: 2,
+        cacheBust: true,
+      });
+    } catch (e) {
+      console.warn('toPng failed, falling back to html2canvas:', e);
+      const canvas = await html2canvas(node, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      return canvas.toDataURL('image/png', 0.95);
+    }
+  };
+
   const handleSaveImage = async () => {
     if (!snackType) return;
     const node = document.getElementById('snack-result-card');
@@ -327,15 +390,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     setIsCapturing(true);
     try {
       await new Promise(r => setTimeout(r, 150));
-      await domToPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1, cacheBust: true, fetchRequestInit: { cache: 'no-cache' } });
-      await new Promise(r => setTimeout(r, 150));
-      const dataUrl = await domToPng(node, {
-        quality: 0.95,
-        backgroundColor: '#ffffff',
-        pixelRatio: 2,
-        cacheBust: true,
-        fetchRequestInit: { cache: 'no-cache' }
-      });
+      const dataUrl = await captureNodeToDataUrl(node);
       
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
@@ -362,15 +417,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     setIsCapturing(true);
     try {
       await new Promise(r => setTimeout(r, 150));
-      await domToPng(node, { quality: 0.1, backgroundColor: '#ffffff', pixelRatio: 1, cacheBust: true, fetchRequestInit: { cache: 'no-cache' } });
-      await new Promise(r => setTimeout(r, 150));
-      const dataUrl = await domToPng(node, {
-        quality: 0.95,
-        backgroundColor: '#ffffff',
-        pixelRatio: 2,
-        cacheBust: true,
-        fetchRequestInit: { cache: 'no-cache' }
-      });
+      const dataUrl = await captureNodeToDataUrl(node);
       
       const blob = dataURItoBlob(dataUrl);
       const file = new File([blob], `oyatsu-${snackType.code}.png`, { type: 'image/png' });
@@ -443,13 +490,13 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       {/* 診断タイプ発表カード */}
       <div className={`rounded-3xl p-6 sm:p-8 border ${snackType.color.border} ${snackType.color.bg} shadow-xl relative overflow-hidden`} id="snack-result-card">
         {isCapturing && (
-          <div className="absolute top-4 right-4 text-[10px] font-bold text-stone-400 bg-white/80 px-2 py-1 rounded-full">
+          <div className="absolute top-3 right-3 text-[10px] font-bold text-stone-500 bg-white/90 px-2.5 py-1 rounded-full border border-stone-200 shadow-2xs z-20">
             16タイプおやつ診断
           </div>
         )}
-        <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10">
+        <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10 pt-2 sm:pt-0">
           <div className="flex flex-col items-center">
-            <div className="w-40 h-28 sm:w-48 sm:h-32 rounded-3xl bg-white/95 shadow-md border-2 border-amber-200 flex items-center justify-center p-2 flex-shrink-0 animate-bounce duration-1000 relative overflow-hidden">
+            <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white/95 shadow-md border-2 border-amber-200 flex items-center justify-center p-2 flex-shrink-0 relative overflow-hidden my-1">
               <SnackCharacterAvatar typeId={snackType.id} size="lg" />
             </div>
             <span className="text-xs font-black text-amber-900 mt-2 bg-amber-100/90 px-3 py-1 rounded-full border border-amber-300 shadow-2xs">
