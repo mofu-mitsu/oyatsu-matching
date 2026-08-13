@@ -223,54 +223,31 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     if (customDis.trim()) allDislikes.push(customDis.trim());
 
     try {
-      // 検索キーワードの構築（再検索のたびに変わるようにランダムに選ぶ）
+      // 検索キーワードの構築（シンプルかつ的確に）
       const randomKwIndex = Math.floor(Math.random() * typeInfo.recommendedKeywords.length);
       mainKw = typeInfo.recommendedKeywords[randomKwIndex] || typeInfo.recommendedKeywords[0] || 'スイーツ';
 
-      // モードがギフトの場合、キーワードをギフト向けに強化
-      if (answers.mode === 'gift') {
-        mainKw = `ギフト ${mainKw}`;
-      }
-
-      // 気分（mood）によるキーワード強化
-      if (answers.mode === 'self' && answers.mood) {
-        if (answers.mood === 'ご褒美') mainKw = `高級 ${mainKw}`;
-        if (answers.mood === '夜食') mainKw = `おつまみ ${mainKw}`; 
-      }
-
-      // 食感 (textures) に基づくキーワード強化
-      if (answers.textures && answers.textures.length > 0 && !customSearchKeyword.trim()) {
-        const textureKwMap: Record<string, string[]> = {
-          'サクサク': ['クッキー', 'パイ', 'サブレ', 'ビスケット'],
-          'ザクザク': ['クッキー', 'クランチ', 'パイ'],
-          'カリカリ': ['かりんとう', 'ナッツ', 'フロランタン'],
-          'パリパリ': ['最中', 'せんべい', 'チップス'],
-          'ふわふわ': ['シフォンケーキ', 'バウムクーヘン', 'カステラ'],
-          'もっちり': ['大福', '和菓子', 'わらび餅'],
-          'とろとろ': ['プリン', 'ゼリー', 'ムース'],
-          'ほろほろ': ['クッキー', 'タルト', 'フィナンシェ'],
-        };
-        
-        let textureKwList: string[] = [];
-        answers.textures.forEach(t => {
-          if (textureKwMap[t]) {
-            textureKwList.push(...textureKwMap[t]);
-          }
-        });
-
-        if (textureKwList.length > 0) {
-          const selectedTexKw = textureKwList[Math.floor(Math.random() * textureKwList.length)];
-          mainKw = `${selectedTexKw} ${mainKw}`;
-        }
-      }
-
-      // フレーバー指定があれば検索キーワードの先頭に付与して最優先検索
+      // フレーバー指定があれば最優先単語として設定
       if (flavors.length > 0 && !customSearchKeyword.trim()) {
         const isSweet = typeInfo.code.startsWith('S');
-        const adjustedFlavors = isSweet
-          ? flavors.map(f => f === 'チーズ' ? 'チーズケーキ' : f)
-          : flavors;
-        mainKw = `${adjustedFlavors.join(' ')} ${mainKw}`;
+        const primaryFlavor = isSweet && flavors[0] === 'チーズ' ? 'チーズケーキ' : flavors[0];
+        mainKw = `${primaryFlavor} ${mainKw}`;
+      } else if (answers.textures && answers.textures.length > 0 && !customSearchKeyword.trim()) {
+        // 食感キーワード（フレーバー指定がない場合のみ補助で付与）
+        const textureKwMap: Record<string, string[]> = {
+          'サクサク': ['クッキー', 'パイ'],
+          'ザクザク': ['クランチ', 'パイ'],
+          'カリカリ': ['かりんとう', 'ナッツ'],
+          'パリパリ': ['せんべい', 'チップス'],
+          'ふわふわ': ['シフォンケーキ', 'バウムクーヘン'],
+          'もっちり': ['大福', 'わらび餅'],
+          'とろとろ': ['プリン', 'アイス'],
+          'ほろほろ': ['フィナンシェ', 'クッキー'],
+        };
+        const matched = textureKwMap[answers.textures[0]];
+        if (matched) {
+          mainKw = `${matched[0]} ${mainKw}`;
+        }
       }
 
       // カスタムキーワード指定があれば最優先
@@ -306,29 +283,15 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         console.warn('API returned error');
       }
 
-      // 1. APIからの取得結果（最大6件）
-      const mainApiList = apiItems.slice(0, 6);
+      // 1. フォールバックデータも正確な条件で9件ランダム取得
+      const fallbacks = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes, 9);
 
-      // 2. フォールバックデータも正確な予算・フレーバー・嫌いなもの条件で取得
-      const fallbacks = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes);
-      const shuffledFallbacks = fallbacks.sort(() => 0.5 - Math.random());
+      // 2. APIからの取得結果がある場合
+      const combined: any[] = [...apiItems];
+      const seenUrls = new Set(apiItems.map((item: any) => item.itemUrl));
 
-      const combined: any[] = [...mainApiList];
-      const seenUrls = new Set(mainApiList.map((item: any) => item.itemUrl));
-
-      // 3. Fallbackから常に3枠追加（APIから6件取得できていてもFallbackから3件を追加して合計9件に）
-      let fbAddedCount = 0;
-      for (const fb of shuffledFallbacks) {
-        if (!seenUrls.has(fb.itemUrl)) {
-          combined.push(fb);
-          seenUrls.add(fb.itemUrl);
-          fbAddedCount++;
-          if (fbAddedCount >= 3) break;
-        }
-      }
-
-      // 4. もし合計で9件未満なら、Fallbackから補填して確実に9件にする
-      for (const fb of shuffledFallbacks) {
+      // 3. Fallbackから補填して確実に合計9件にする
+      for (const fb of fallbacks) {
         if (combined.length >= 9) break;
         if (!seenUrls.has(fb.itemUrl)) {
           combined.push(fb);
@@ -336,7 +299,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         }
       }
 
-      // 最終ガード: 予算上限・下限、および嫌いなものの最終フィルタ
+      // 最終ガード: 予算・嫌いなものの最終フィルタ
       let finalFiltered = combined;
       if (maxP > 0) {
         finalFiltered = finalFiltered.filter((item: any) => item.itemPrice <= maxP);
@@ -352,9 +315,15 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         });
       }
 
-      // もしフィルタで完全にゼロ件になってしまった場合は、fallbackから再度抽出
-      if (finalFiltered.length === 0) {
-        finalFiltered = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes);
+      // もしフィルタで不足してしまった場合は、fallbackから9件確実に補う
+      if (finalFiltered.length < 9) {
+        const additionalFb = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes, 9);
+        for (const fb of additionalFb) {
+          if (finalFiltered.length >= 9) break;
+          if (!finalFiltered.some((it: any) => it.itemUrl === fb.itemUrl)) {
+            finalFiltered.push(fb);
+          }
+        }
       }
 
       setItems(finalFiltered.slice(0, 9));

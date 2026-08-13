@@ -5421,7 +5421,8 @@ export const getFallbackItems = (
   minPrice?: number,
   maxPrice?: number,
   flavors: string[] = [],
-  dislikes: string[] = []
+  dislikes: string[] = [],
+  limit: number = 9
 ): RakutenItem[] => {
   const isSweet = typeCode.startsWith('S');
   const isJapanese = typeCode.endsWith('J');
@@ -5460,11 +5461,14 @@ export const getFallbackItems = (
     availableItems = availableItems.filter(item => item.itemPrice <= maxPrice);
   }
 
+  // 事前に全体をシャッフルして毎回違う組み合わせが出やすくする
+  availableItems = shuffleArray(availableItems);
+
   // 3. targetTypes に指定タイプ (例: STFW) が含まれている商品を絶対最優先抽出！
   let typeStrictItems = availableItems.filter(item => item.targetTypes.includes(typeCode));
 
   // 不足時は同系統 (甘い・洋風/和風) で補完
-  if (typeStrictItems.length < 6) {
+  if (typeStrictItems.length < limit) {
     const sameCategory = availableItems.filter(item => {
       if (typeStrictItems.some(m => m.itemName === item.itemName)) return false;
       const itemIsSweet = item.targetTypes.some(t => t.startsWith('S'));
@@ -5478,7 +5482,7 @@ export const getFallbackItems = (
     typeStrictItems = [...typeStrictItems, ...sameCategory];
   }
 
-  // 4. フレーバー指定がある場合、対象タイプの候補の中からフレーバー一致品を最優先ソート
+  // 4. フレーバー指定がある場合、一致商品を先頭へソート（同等ランク内はシャッフル順を保持）
   if (expandedFlavors.length > 0) {
     typeStrictItems.sort((a, b) => {
       const aHas = expandedFlavors.some(f => a.itemName.includes(f));
@@ -5487,11 +5491,9 @@ export const getFallbackItems = (
       if (!aHas && bHas) return 1;
       return 0;
     });
-  } else {
-    typeStrictItems = shuffleArray(typeStrictItems);
   }
 
-  return typeStrictItems.slice(0, 6).map(({ targetTypes, ...item }) => {
+  return typeStrictItems.slice(0, limit).map(({ targetTypes, ...item }) => {
     const { _matchScore, _finalScore, ...cleanItem } = item as any;
     return cleanItem;
   });

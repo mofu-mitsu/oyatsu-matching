@@ -25,32 +25,59 @@ app.get('/api/health', (req, res) => {
 // 2. 楽天商品検索プロキシ API
 app.get('/api/rakuten/search', async (req, res) => {
   try {
-    const keyword = (req.query.keyword as string) || 'スイーツ ギフト';
+    const rawKeyword = (req.query.keyword as string) || 'スイーツ ギフト';
     const minPrice = req.query.minPrice ? Number(req.query.minPrice) : undefined;
     const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : undefined;
     const dislikes = req.query.dislikes ? (req.query.dislikes as string).split(',').filter(Boolean) : [];
     
     // typeCode for fallback
-    const typeCode = req.query.typeCode as string || 'STFW';
+    const typeCode = (req.query.typeCode as string) || 'STFW';
+    const isSweetType = typeCode.startsWith('S');
 
-    // 複数フレーバーを入れるとAND検索になってヒットしないため、フレーバーを付加して検索
+    // 複数フレーバー
     let flavors = req.query.flavors ? (req.query.flavors as string).split(',').filter(Boolean) : [];
     
-    let data = null;
-    let fallbackNeeded = false;
-    let searchKeyword = keyword;
-    
-    // フレーバーがある場合はフレーバーを含めて検索、ダメなら単独で検索
-    for (let i = flavors.length; i >= 0; i--) {
-      const currentFlavors = flavors.slice(0, i);
-      searchKeyword = currentFlavors.length > 0 ? `${currentFlavors.join(' ')} ${keyword}` : keyword;
-      
-      console.log(`🛍️ 楽天商品検索リクエスト: keyword="${searchKeyword}", price=${minPrice}-${maxPrice}, dislikes=[${dislikes.join(',')}]`);
+    // 多すぎる単語（「チョコ いちご カステラ 高級 塩バタースコーン」等）を整理し段階的な検索候補を作成
+    const keywordsToTry: string[] = [];
+
+    // 元のキーワードから単語を取り出し
+    const tokens = rawKeyword.split(/\s+/).filter(Boolean);
+
+    // 1. フレーバー + 基本キーワード（2語程度）
+    if (flavors.length > 0) {
+      const primaryFlavor = isSweetType && flavors[0] === 'チーズ' ? 'チーズケーキ' : flavors[0];
+      const mainWord = tokens.find(t => !flavors.includes(t) && t !== '高級' && t !== 'ギフト') || (isSweetType ? 'スイーツ' : 'おつまみ');
+      keywordsToTry.push(`${primaryFlavor} ${mainWord}`);
+      keywordsToTry.push(primaryFlavor);
+    }
+
+    // 2. ユーザー指定キーワードから修飾語（高級など）を除いた2単語
+    const coreTokens = tokens.filter(t => t !== '高級' && t !== 'ギフト' && t !== 'おつまみ');
+    if (coreTokens.length > 0) {
+      keywordsToTry.push(coreTokens.slice(0, 2).join(' '));
+      keywordsToTry.push(coreTokens[0]);
+    }
+
+    // 3. タイプの大枠キーワード
+    if (isSweetType) {
+      keywordsToTry.push('洋菓子 焼き菓子', '和菓子 ギフト', 'スイーツ');
+    } else {
+      keywordsToTry.push('おつまみ ギフト', '珍味 おつまみ', 'おつまみ');
+    }
+
+    // 重複除去
+    const uniqueKeywords = Array.from(new Set(keywordsToTry.filter(Boolean)));
+
+    let data: any = null;
+    let successfulKeyword = '';
+
+    for (const kw of uniqueKeywords) {
+      console.log(`🛍️ 楽天商品検索トライ: keyword="${kw}", price=${minPrice}-${maxPrice}`);
 
       const params = new URLSearchParams({
         applicationId: RAKUTEN_APP_ID,
         affiliateId: RAKUTEN_AFFILIATE_ID,
-        keyword: searchKeyword,
+        keyword: kw,
         hits: '30',
         format: 'json',
         sort: '+reviewAverage',
@@ -59,34 +86,35 @@ app.get('/api/rakuten/search', async (req, res) => {
       if (minPrice && minPrice > 0) params.append('minPrice', String(minPrice));
       if (maxPrice && maxPrice > 0 && maxPrice < 999999) params.append('maxPrice', String(maxPrice));
 
-      const apiUrl = `https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701?${params.toString()}`;
+      // 楽天API 正式V2エンドポイント
+      const apiUrl = `https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601?${params.toString()}`;
 
       const headers: any = { 
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
         'Referer': req.headers.referer || 'https://oyatsu-matching.vercel.app/'
       };
-      if (RAKUTEN_ACCESS_KEY) {
-        headers['accessKey'] = RAKUTEN_ACCESS_KEY;
-      }
 
-      const response = await fetch(apiUrl, { headers });
-
-      if (!response.ok) {
-        console.warn(`⚠️ 楽天APIエラー (${response.status})`);
-        fallbackNeeded = true;
-        break;
-      }
-
-      data = await response.json();
-      if (data && data.Items && data.Items.length > 0) {
-        fallbackNeeded = false;
-        break;
+      try {
+        const response = await fetch(apiUrl, { headers });
+        if (response.ok) {
+          const resJson = await response.json();
+          if (resJson && resJson.Items && resJson.Items.length > 0) {
+            data = resJson;
+            successfulKeyword = kw;
+            console.log(`✅ 楽天APIヒット (${resJson.Items.length}件): keyword="${kw}"`);
+            break;
+          }
+        } else {
+          console.warn(`⚠️ 楽天API応答エラー (${response.status}) for keyword="${kw}"`);
+        }
+      } catch (err) {
+        console.error(`❌ 楽天API通信エラー for keyword="${kw}":`, err);
       }
     }
 
-    if (fallbackNeeded || !data || !data.Items || data.Items.length === 0) {
-      console.warn('⚠️ 楽天APIから取得できなかったため、フォールバックデータを返却します。');
-      const fallbackItems = getFallbackItems(typeCode, minPrice, maxPrice, flavors, dislikes);
+    if (!data || !data.Items || data.Items.length === 0) {
+      console.warn('⚠️ 楽天APIヒットゼロのため、フォールバックデータを返却します。');
+      const fallbackItems = getFallbackItems(typeCode, minPrice, maxPrice, flavors, dislikes, 9);
       return res.json({ items: fallbackItems, keywordUsed: 'おすすめのおやつ', totalCount: fallbackItems.length });
     }
 
@@ -110,7 +138,6 @@ app.get('/api/rakuten/search', async (req, res) => {
     });
 
     // 0.5 甘いおやつタイプ(S)なら珍味・豆腐・おつまみ系を除外
-    const isSweetType = typeCode && typeCode.startsWith('S');
     if (isSweetType) {
       const savoryKeywords = ['珍味', '豆腐', 'おつまみ', 'つまみ', '酒のあて', '居酒屋', 'オニオン', 'サラミ', 'ジャーキー', 'カルパス', '小鉢', '漬物', '枝豆', '冷や奴', '冷奴', 'キムチ', 'ナムル'];
       items = items.filter((item: any) => {
