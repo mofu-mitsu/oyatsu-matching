@@ -5429,8 +5429,21 @@ export const getFallbackItems = (
 
   const expandedFlavors = expandKeywords(flavors);
 
-  // 1. 嫌いなものを厳密に除外
+  // 1. 嫌いなもの＆甘いタイプ時のおつまみ系を厳密に除外
   let availableItems = [...FALLBACK_ITEMS];
+
+  const savoryKeywords = ['珍味', '豆腐', 'おつまみ', 'つまみ', '酒', '居酒屋', 'オニオン', 'サラミ', 'ジャーキー', 'カルパス', '小鉢', '漬物', '枝豆', '冷や奴', '冷奴', 'キムチ', 'ナムル'];
+
+  availableItems = availableItems.filter(item => {
+    // 甘いタイプ(S)ならおつまみ・豆腐系を完全排除
+    if (isSweet) {
+      if (savoryKeywords.some(kw => item.itemName.includes(kw))) {
+        return false;
+      }
+    }
+    return true;
+  });
+
   if (dislikes.length > 0) {
     const normDislikes = dislikes.map(d => d.toLowerCase().trim()).filter(Boolean);
     availableItems = availableItems.filter(item => {
@@ -5450,11 +5463,21 @@ export const getFallbackItems = (
   // シャッフルして毎回ベースの順序を変える
   availableItems = shuffleArray(availableItems);
 
-  // 3. タイプ合致検索
-  let matched = availableItems.filter(item => item.targetTypes.includes(typeCode));
+  // 3. フレーバー指定がある場合は、フレーバーに一致する商品を全FALLBACKデータから最優先で収集
+  let flavorMatches: typeof availableItems = [];
+  if (expandedFlavors.length > 0) {
+    flavorMatches = availableItems.filter(item => 
+      expandedFlavors.some(f => item.itemName.includes(f))
+    );
+  }
 
-  // 4. 不足時は同系統で補完
-  if (matched.length < 12) {
+  // 4. タイプ合致検索
+  let typeMatched = availableItems.filter(item => 
+    item.targetTypes.includes(typeCode) && !flavorMatches.some(fm => fm.itemName === item.itemName)
+  );
+
+  // 5. 不足時は同系統で補完
+  if (flavorMatches.length + typeMatched.length < 12) {
     const sameCategory = availableItems.filter(item => {
       const itemIsSweet = item.targetTypes.some(t => t.startsWith('S'));
       const itemIsJapanese = item.targetTypes.some(t => t.endsWith('J'));
@@ -5462,55 +5485,22 @@ export const getFallbackItems = (
       
       const sweetMatch = itemIsSweet === isSweet;
       const styleMatch = (isJapanese && itemIsJapanese) || (isWestern && itemIsWestern);
-      const notIncluded = !matched.some(m => m.itemName === item.itemName);
+      const notIncluded = !flavorMatches.some(m => m.itemName === item.itemName) &&
+                          !typeMatched.some(m => m.itemName === item.itemName);
       
       return (sweetMatch || styleMatch) && notIncluded;
     });
-    matched = [...matched, ...sameCategory];
+    typeMatched = [...typeMatched, ...sameCategory];
   }
 
-  // 5. スコアリング (フレーバー指定がある場合は超最優先)
-  matched.forEach(item => {
-    let score = 0;
+  // フレーバー一致アイテムとタイプ一致アイテムを別々にシャッフル
+  const shuffledFlavors = shuffleArray(flavorMatches);
+  const shuffledTypes = shuffleArray(typeMatched);
 
-    // フレーバーマッチボーナス
-    let flavorHit = false;
-    expandedFlavors.forEach(f => {
-      if (item.itemName.includes(f)) {
-        score += 3000; // フレーバー指定がある場合は非常に大きなスコアを付与
-        flavorHit = true;
-      }
-    });
+  // フレーバー一致商品を一番先頭にし、残りをタイプ一致商品で埋める
+  const resultCandidates = [...shuffledFlavors, ...shuffledTypes].slice(0, 6);
 
-    // タイプ直接マッチボーナス
-    if (item.targetTypes.includes(typeCode)) {
-      score += 1000;
-      if (item.targetTypes.length === 1) score += 200;
-    } else {
-      const itemIsJapanese = item.targetTypes.some(t => t.endsWith('J'));
-      const itemIsWestern = item.targetTypes.some(t => t.endsWith('W'));
-      if ((isJapanese && itemIsJapanese) || (isWestern && itemIsWestern)) {
-        score += 500;
-      }
-    }
-
-    // STFW向けの特定スイーツ優遇
-    if (typeCode === 'STFW' && (item.itemName.includes('シフォン') || item.itemName.includes('バウム') || item.itemName.includes('バーム'))) {
-      score += 100;
-    }
-
-    // ランダム揺らぎ（毎回違う順番や組み合わせを出すため）
-    (item as any)._finalScore = score + Math.random() * 80;
-  });
-
-  // スコア順にソート
-  matched.sort((a, b) => ((b as any)._finalScore || 0) - ((a as any)._finalScore || 0));
-
-  // 結果返却（上位12件からランダムシャッフルして上位6件を返す）
-  const topCandidates = matched.slice(0, 12);
-  const shuffledTop = shuffleArray(topCandidates);
-
-  return shuffledTop.slice(0, 6).map(({ targetTypes, ...item }) => {
+  return resultCandidates.map(({ targetTypes, ...item }) => {
     const { _matchScore, _finalScore, ...cleanItem } = item as any;
     return cleanItem;
   });

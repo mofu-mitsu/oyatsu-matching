@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { toPng } from 'html-to-image';
-import html2canvas from 'html2canvas';
+import { domToPng } from 'modern-screenshot';
 import { QuizAnswers, RakutenItem, SnackTypeInfo } from '../types';
 import { SnackCharacterAvatar } from './SnackCharacterAvatar';
 import { calculateSnackType, SNACK_TYPES } from '../data/snackTypes';
@@ -265,6 +264,15 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         }
       }
 
+      // フレーバー指定があれば検索キーワードの先頭に付与して最優先検索
+      if (flavors.length > 0 && !customSearchKeyword.trim()) {
+        const isSweet = typeInfo.code.startsWith('S');
+        const adjustedFlavors = isSweet
+          ? flavors.map(f => f === 'チーズ' ? 'チーズケーキ' : f)
+          : flavors;
+        mainKw = `${adjustedFlavors.join(' ')} ${mainKw}`;
+      }
+
       // カスタムキーワード指定があれば最優先
       if (customSearchKeyword.trim()) {
         mainKw = customSearchKeyword.trim();
@@ -363,23 +371,35 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
   };
 
   const captureNodeToDataUrl = async (node: HTMLElement): Promise<string> => {
+    // ノード内のすべての画像がデコード完了するのを待つ
+    const imgs = Array.from(node.querySelectorAll('img'));
+    await Promise.all(
+      imgs.map((img) => {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      })
+    );
+
+    // ウォームアップレンダリング（これで画像が内部デコード・キャッシュされ確実に載る）
     try {
-      return await toPng(node, {
-        quality: 0.95,
-        backgroundColor: '#ffffff',
-        pixelRatio: 2,
-        cacheBust: true,
-      });
+      await domToPng(node, { quality: 0.1, pixelRatio: 1, cacheBust: true });
     } catch (e) {
-      console.warn('toPng failed, falling back to html2canvas:', e);
-      const canvas = await html2canvas(node, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-      return canvas.toDataURL('image/png', 0.95);
+      // warmup error ignore
     }
+
+    await new Promise((r) => setTimeout(r, 100));
+
+    // 本番高画質キャプチャ（oklchカラー関数も完全サポート）
+    return await domToPng(node, {
+      quality: 0.95,
+      backgroundColor: '#ffffff',
+      pixelRatio: 2,
+      cacheBust: true,
+      fetchRequestInit: { cache: 'force-cache' },
+    });
   };
 
   const handleSaveImage = async () => {
@@ -490,11 +510,13 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       {/* 診断タイプ発表カード */}
       <div className={`rounded-3xl p-6 sm:p-8 border ${snackType.color.border} ${snackType.color.bg} shadow-xl relative overflow-hidden`} id="snack-result-card">
         {isCapturing && (
-          <div className="absolute top-3 right-3 text-[10px] font-bold text-stone-500 bg-white/90 px-2.5 py-1 rounded-full border border-stone-200 shadow-2xs z-20">
-            16タイプおやつ診断
+          <div className="flex justify-end mb-2 relative z-20">
+            <span className="text-[11px] font-bold text-stone-500 bg-white/95 px-3 py-1 rounded-full border border-stone-200 shadow-2xs">
+              16タイプおやつ診断
+            </span>
           </div>
         )}
-        <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10 pt-2 sm:pt-0">
+        <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10">
           <div className="flex flex-col items-center">
             <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white/95 shadow-md border-2 border-amber-200 flex items-center justify-center p-2 flex-shrink-0 relative overflow-hidden my-1">
               <SnackCharacterAvatar typeId={snackType.id} size="lg" />

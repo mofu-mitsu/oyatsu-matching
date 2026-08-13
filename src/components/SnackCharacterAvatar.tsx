@@ -62,37 +62,11 @@ export const SnackCharacterAvatar: React.FC<SnackCharacterAvatarProps> = ({
   const aiGeneratedImg = AI_CHARACTER_IMAGES[typeId];
   
 
-  const [dataUri, setDataUri] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (aiGeneratedImg) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          setDataUri(canvas.toDataURL('image/jpeg', 0.8));
-        }
-      };
-      img.onerror = () => {
-        // Fallback
-        setDataUri(aiGeneratedImg);
-      };
-      img.src = aiGeneratedImg;
-    }
-  }, [aiGeneratedImg]);
-
-
-
   if (aiGeneratedImg) {
     return (
       <div className={`relative inline-flex items-center justify-center ${dimension} ${className} overflow-hidden rounded-2xl border-2 border-amber-200/80 shadow-md bg-white p-0.5`} id={`character-avatar-${typeId}`}>
         <img
-          src={dataUri || aiGeneratedImg}
+          src={aiGeneratedImg}
           alt={`Character ${typeId}`}
           className="w-full h-full object-cover rounded-2xl"
         />

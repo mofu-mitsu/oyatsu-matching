@@ -109,6 +109,16 @@ app.get('/api/rakuten/search', async (req, res) => {
       return !nonFoodKeywords.some(kw => text.includes(kw.toLowerCase()));
     });
 
+    // 0.5 甘いおやつタイプ(S)なら珍味・豆腐・おつまみ系を除外
+    const isSweetType = typeCode && typeCode.startsWith('S');
+    if (isSweetType) {
+      const savoryKeywords = ['珍味', '豆腐', 'おつまみ', 'つまみ', '酒のあて', '居酒屋', 'オニオン', 'サラミ', 'ジャーキー', 'カルパス', '小鉢', '漬物', '枝豆', '冷や奴', '冷奴', 'キムチ', 'ナムル'];
+      items = items.filter((item: any) => {
+        const title = item.itemName || '';
+        return !savoryKeywords.some(kw => title.includes(kw));
+      });
+    }
+
     // 1. 予算フィルタを厳密適用 (API結果から漏れたものを除外)
     if (minPrice && minPrice > 0) {
       items = items.filter((item: any) => item.itemPrice >= minPrice);
@@ -126,23 +136,28 @@ app.get('/api/rakuten/search', async (req, res) => {
       });
     }
 
-    // 3. フレーバー優先度付け & スコアリング + ランダム性追加
+    // 3. フレーバー優先度付け（商品名に含まれるものを超最優先）
     if (flavors.length > 0) {
       items.sort((a: any, b: any) => {
-        const aText = `${a.itemName} ${a.itemCaption}`;
-        const bText = `${b.itemName} ${b.itemCaption}`;
-        
-        let aMatchCount = 0;
-        let bMatchCount = 0;
-        
+        let aTitleMatch = 0;
+        let bTitleMatch = 0;
+        let aTextMatch = 0;
+        let bTextMatch = 0;
+
         flavors.forEach(f => {
-          if (aText.includes(f)) aMatchCount++;
-          if (bText.includes(f)) bMatchCount++;
+          if (a.itemName.includes(f)) aTitleMatch++;
+          if (b.itemName.includes(f)) bTitleMatch++;
+          if (`${a.itemName} ${a.itemCaption || ''}`.includes(f)) aTextMatch++;
+          if (`${b.itemName} ${b.itemCaption || ''}`.includes(f)) bTextMatch++;
         });
 
-        // マッチ数が違う場合はフレーバー重視
-        if (bMatchCount !== aMatchCount) {
-          return bMatchCount - aMatchCount;
+        // 商品タイトル(itemName)にフレーバー名が入っているものを絶対最優先
+        if (bTitleMatch !== aTitleMatch) {
+          return bTitleMatch - aTitleMatch;
+        }
+        // 次にキャプション等にフレーバー名が入っているもの
+        if (bTextMatch !== aTextMatch) {
+          return bTextMatch - aTextMatch;
         }
         // マッチ数が同じ場合は若干ランダムにシャッフル
         return Math.random() - 0.5;
