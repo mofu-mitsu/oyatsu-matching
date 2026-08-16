@@ -190,7 +190,17 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     }
 
     // 楽天API呼び出し
-    fetchRakutenItems(resultType, answers.budget, answers.flavors, answers.dislikes, answers.customDislike);
+    fetchRakutenItems(
+      resultType,
+      answers.budget,
+      answers.flavors,
+      answers.customFlavor || '',
+      answers.dislikes,
+      answers.customDislike,
+      answers.mode,
+      answers.mood,
+      answers.giftVibe
+    );
 
     // GASに診断結果を送信（初回マウント/診断完了時）
     if (!hasSentToGAS.current) {
@@ -212,8 +222,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     typeInfo: SnackTypeInfo,
     selectedBudget: string,
     flavors: string[],
+    customFlv: string,
     dislikeList: string[],
-    customDis: string
+    customDis: string,
+    mode?: string,
+    mood?: string,
+    giftVibe?: string
   ) => {
     setLoading(true);
     let mainKw = typeInfo.recommendedKeywords[0] || 'スイーツ';
@@ -227,10 +241,18 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       const randomKwIndex = Math.floor(Math.random() * typeInfo.recommendedKeywords.length);
       mainKw = typeInfo.recommendedKeywords[randomKwIndex] || typeInfo.recommendedKeywords[0] || 'スイーツ';
 
-      // フレーバー指定があれば最優先単語として設定
-      if (flavors.length > 0 && !customSearchKeyword.trim()) {
-        const isSweet = typeInfo.code.startsWith('S');
-        const primaryFlavor = isSweet && flavors[0] === 'チーズ' ? 'チーズケーキ' : flavors[0];
+      const isSweet = typeInfo.code.startsWith('S');
+
+      // 0. 自由入力カスタムフレーバーがあれば最優先！
+      if (customFlv.trim() && !customSearchKeyword.trim()) {
+        mainKw = `${customFlv.trim()} ${isSweet ? 'スイーツ' : 'おつまみ'}`;
+      } else if (flavors.length > 0 && !customSearchKeyword.trim()) {
+        // フレーバー指定があれば最優先単語として設定
+        let primaryFlavor = flavors[0];
+        if (isSweet) {
+          if (primaryFlavor === 'チーズ') primaryFlavor = 'チーズケーキ';
+          else if (primaryFlavor === 'ミント' || primaryFlavor === 'チョコミント' || primaryFlavor === 'ミント・チョコミント') primaryFlavor = 'チョコミント';
+        }
         mainKw = `${primaryFlavor} ${mainKw}`;
       } else if (answers.textures && answers.textures.length > 0 && !customSearchKeyword.trim()) {
         // 食感キーワード（フレーバー指定がない場合のみ補助で付与）
@@ -250,7 +272,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         }
       }
 
-      // カスタムキーワード指定があれば最優先
+      // カスタムキーワード指定（再検索バー）があれば最優先
       if (customSearchKeyword.trim()) {
         mainKw = customSearchKeyword.trim();
       }
@@ -269,8 +291,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       });
       if (minP > 0) params.append('minPrice', String(minP));
       if (maxP > 0) params.append('maxPrice', String(maxP));
+      if (customFlv.trim()) params.append('customFlavor', customFlv.trim());
       if (flavors.length > 0) params.append('flavors', flavors.join(','));
       if (allDislikes.length > 0) params.append('dislikes', allDislikes.join(','));
+      if (mode) params.append('mode', mode);
+      if (mood) params.append('mood', mood);
+      if (giftVibe) params.append('giftVibe', giftVibe);
 
       const res = await fetch(`/api/rakuten/search?${params.toString()}`);
       let apiItems: any[] = [];
@@ -852,7 +878,21 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
 
         <button
           type="button"
-          onClick={() => { playPopSound(); fetchRakutenItems(snackType, budget, answers.flavors, answers.dislikes, answers.customDislike); }}
+          onClick={() => {
+            if (!snackType) return;
+            playPopSound();
+            fetchRakutenItems(
+              snackType,
+              budget,
+              answers.flavors,
+              answers.customFlavor || '',
+              answers.dislikes,
+              answers.customDislike,
+              answers.mode,
+              answers.mood,
+              answers.giftVibe
+            );
+          }}
           className="w-full py-3 rounded-2xl bg-stone-800 text-white font-extrabold text-sm hover:bg-stone-900 transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
           id="re-search-submit"
         >

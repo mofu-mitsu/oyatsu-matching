@@ -21,7 +21,7 @@ const TEXTURES = [
 ];
 
 const FLAVORS = [
-  'チョコ', 'いちご', '抹茶', 'バニラ', 'キャラメル', 'チーズ',
+  'チョコ', 'いちご', '抹茶', 'ミント・チョコミント', 'バニラ', 'キャラメル', 'チーズ',
   'ナッツ', 'フルーツ', 'はちみつ', 'さつまいも', 'コーヒー',
   '紅茶', '柑橘・レモン', '梅・塩味', 'あんこ', 'さくら'
 ];
@@ -46,6 +46,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialMode, onComplete }) =
   const [freshValue, setFreshValue] = useState<number>(30); // 焼き菓子/常温寄り
   const [textures, setTextures] = useState<string[]>(['サクサク', 'ふわふわ']);
   const [flavors, setFlavors] = useState<string[]>(['チョコ', 'いちご']);
+  const [customFlavor, setCustomFlavor] = useState<string>('');
   const [dislikes, setDislikes] = useState<string[]>([]);
   const [customDislike, setCustomDislike] = useState<string>('');
   const [budget, setBudget] = useState<'500' | '1000' | '3000' | '5000' | '10000' | 'any'>('3000');
@@ -94,6 +95,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialMode, onComplete }) =
         freshValue,
         textures,
         flavors,
+        customFlavor,
         dislikes,
         customDislike,
         budget,
@@ -312,6 +314,25 @@ export const QuizView: React.FC<QuizViewProps> = ({ initialMode, onComplete }) =
                     </button>
                   );
                 })}
+              </div>
+
+              {/* 自由入力欄（最優先キーワード） */}
+              <div className="pt-3 max-w-sm mx-auto">
+                <label className="block text-xs font-bold text-stone-700 mb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <PlusCircle className="w-3.5 h-3.5 text-amber-600" />
+                    <span>その他好きな味・お菓子（自由入力）:</span>
+                  </span>
+                  <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded-full">最優先で探すよ！</span>
+                </label>
+                <input
+                  type="text"
+                  value={customFlavor}
+                  onChange={(e) => setCustomFlavor(e.target.value)}
+                  placeholder="例: カヌレ, ピスタチオ, チョコミント, フィナンシェ"
+                  className="w-full px-3.5 py-2 rounded-xl border border-amber-300/80 bg-amber-50/30 text-xs focus:ring-2 focus:ring-amber-400 focus:outline-none placeholder:text-stone-400"
+                  id="custom-flavor-input"
+                />
               </div>
             </div>
           )}

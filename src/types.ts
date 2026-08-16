@@ -35,6 +35,7 @@ export interface QuizAnswers {
   textures: string[]; // ['ふわふわ', 'もっちり', 'サクサク', ...]
   // Step 5: 好きなフレーバー
   flavors: string[]; // ['チョコ', '抹茶', 'いちご', ...]
+  customFlavor?: string; // 自由入力の好きな味・お菓子名（最優先）
   // Step 6: 苦手なもの
   dislikes: string[]; // ['シナモン', 'ミント', ...]
   customDislike: string;
