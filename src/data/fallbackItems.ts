@@ -8,6 +8,40 @@ export interface FallbackItem extends RakutenItem {
 // APIがメンテナンス中などのエラー時に利用するフォールバックデータ
 export const FALLBACK_ITEMS: FallbackItem[] = [
   // --- Sweet (S) 系 ---
+  // チョコミント・ミント系スイーツ
+  {
+    itemName: '贅沢生チョコミント ロールケーキ 1本',
+    itemPrice: 2780,
+    itemUrl: 'https://item.rakuten.co.jp/',
+    affiliateUrl: 'https://hb.afl.rakuten.co.jp/ichiba/56610463.4aaa6b01.56610464.7ac5a73c/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2F&link_type=pict',
+    imageUrl: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=400&q=80',
+    shopName: 'パティスリー ミント',
+    reviewAverage: 4.8,
+    reviewCount: 142,
+    targetTypes: ['STFW', 'SHFW', 'STCW', 'SHCW'],
+  },
+  {
+    itemName: 'プレミアム 濃厚チョコミント ジェラート＆アイス 6個アソート',
+    itemPrice: 3480,
+    itemUrl: 'https://item.rakuten.co.jp/',
+    affiliateUrl: 'https://hb.afl.rakuten.co.jp/ichiba/5660e53a.481b5674.5660e53b.66c4fc60/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2F&link_type=pict',
+    imageUrl: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=400&q=80',
+    shopName: '極上アイス工房',
+    reviewAverage: 4.7,
+    reviewCount: 98,
+    targetTypes: ['STCW', 'SHCW', 'STCJ', 'SHCJ'],
+  },
+  {
+    itemName: 'ベルギー産カカオ使用 チョコミント サンドクッキー 8個入',
+    itemPrice: 1980,
+    itemUrl: 'https://item.rakuten.co.jp/',
+    affiliateUrl: 'https://hb.afl.rakuten.co.jp/ichiba/566108a9.2cc4600e.566108aa.3a028b5a/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2F&link_type=pict',
+    imageUrl: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=400&q=80',
+    shopName: 'ショコラトリー ベルジュ',
+    reviewAverage: 4.6,
+    reviewCount: 85,
+    targetTypes: ['SHFW', 'STFW', 'SHCW', 'STCW'],
+  },
   // 高価格帯 (7000〜10000円)
   {
     itemName: '京都祇園 高級天然氷 京かき氷＆果汁シロップ 贅沢フルセット',
