@@ -10,6 +10,50 @@ export const FALLBACK_ITEMS: FallbackItem[] = [
   // --- Sweet (S) 系 ---
   // チョコミント・ミント系スイーツ（楽天市場人気アイテム）
   {
+    itemName: 'チョコミント ロールケーキ 1本',
+    itemPrice: 3600,
+    itemUrl: 'https://item.rakuten.co.jp/cakejp/3409551/',
+    affiliateUrl: 'https://hb.afl.rakuten.co.jp/ichiba/569e2b2d.db6416a9.569e2b2e.f37cb3f8/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fcakejp%2F3409551%2F&link_type=pict&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0Iiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MCwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9',
+    imageUrl: 'https://thumbnail.image.rakuten.co.jp/@0_mall/cakejp/cabinet/09818851/3409551x1.jpg?_ex=240x240',
+    shopName: 'Cake.jp',
+    reviewAverage: 4.5,
+    reviewCount: 40,
+    targetTypes: ['STFW', 'SHFW', 'STCW', 'SHCW', 'STFJ', 'SHFJ', 'STCJ', 'SHCJ'],
+  },
+  {
+    itemName: 'チョコミント ギフト スペシャルセット 詰め合わせ',
+    itemPrice: 3000,
+    itemUrl: 'https://item.rakuten.co.jp/jotohakurai/10000332/',
+    affiliateUrl: 'https://hb.afl.rakuten.co.jp/ichiba/569e2cc4.07abba9f.569e2cc5.73d4ed00/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fjotohakurai%2F10000332%2F&link_type=pict&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0Iiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MCwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9',
+    imageUrl: 'https://thumbnail.image.rakuten.co.jp/@0_mall/jotohakurai/cabinet/chocomint_set3.jpg?_ex=240x240',
+    shopName: '城東白来',
+    reviewAverage: 5.0,
+    reviewCount: 52,
+    targetTypes: ['STCW', 'SHCW', 'STFW', 'SHFW', 'STCJ', 'SHCJ'],
+  },
+  {
+    itemName: '北海道 濃厚チョコミント アイスクリーム ギフトセット',
+    itemPrice: 5400,
+    itemUrl: 'https://item.rakuten.co.jp/hokkaido-gift/ba0013/',
+    affiliateUrl: 'https://hb.afl.rakuten.co.jp/ichiba/569e2dbd.93e0d828.569e2dbe.702ca883/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fhokkaido-gift%2Fba0013%2F&link_type=pict&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0Iiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MCwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9',
+    imageUrl: 'https://thumbnail.image.rakuten.co.jp/@0_mall/hokkaido-gift/cabinet/thumbimage3/11568905/6441064.jpg?_ex=240x240',
+    shopName: '北海道ギフト専門店',
+    reviewAverage: 4.5,
+    reviewCount: 68,
+    targetTypes: ['STCW', 'SHCW', 'STCJ', 'SHCJ', 'STFW', 'SHFW'],
+  },
+  {
+    itemName: 'チョコミント メレンゲ ボトル スイーツ',
+    itemPrice: 1800,
+    itemUrl: 'https://item.rakuten.co.jp/jotohakurai/10000027/',
+    affiliateUrl: 'https://hb.afl.rakuten.co.jp/ichiba/569e2cc4.07abba9f.569e2cc5.73d4ed00/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fjotohakurai%2F10000027%2F&link_type=pict&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0Iiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MCwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9',
+    imageUrl: 'https://thumbnail.image.rakuten.co.jp/@0_mall/jotohakurai/cabinet/compass1631012133.jpg?_ex=240x240',
+    shopName: '城東白来',
+    reviewAverage: 4.0,
+    reviewCount: 24,
+    targetTypes: ['STFW', 'SHFW', 'STCW', 'SHCW', 'STFJ', 'SHFJ', 'STCJ', 'SHCJ'],
+  },
+  {
     itemName: 'チョコミントバターチーズサンド 5個入',
     itemPrice: 2880,
     itemUrl: 'https://item.rakuten.co.jp/runnycheese/10000091/',
@@ -5465,12 +5509,11 @@ export const FALLBACK_ITEMS: FallbackItem[] = [
 ];
 
 const KEYWORD_MAP: Record<string, string[]> = {
+  'チョコミント': ['チョコミント', 'ミントチョコ', 'ミント', 'mint', 'ペパーミント'],
+  'ミント': ['ミント', 'チョコミント', 'ミントチョコ', 'mint', 'ペパーミント'],
+  'チョコ': ['チョコ', 'カカオ', 'ショコラ', 'cocoa', 'chocolate', 'ガトーショコラ'],
   'いちご': ['いちご', '苺', 'ストロベリー', 'strawberry', 'イチゴ'],
-  'チョコ': ['チョコ', 'カカオ', 'ショコラ', 'cocoa', 'chocolate'],
   '抹茶': ['抹茶', '宇治', 'グリーンティー', 'matcha'],
-  'ミント': ['ミント', 'チョコミント', 'mint', 'ペパーミント'],
-  'チョコミント': ['チョコミント', 'ミントチョコ', 'ミント', 'mint'],
-  'ミント・チョコミント': ['チョコミント', 'ミントチョコ', 'ミント', 'mint'],
   'チーズ': ['チーズ', 'cheese', 'フロマージュ'],
   'レモン': ['レモン', '檸檬', 'lemon', 'シトラス'],
   'ふわふわ': ['ふわふわ', 'フワフワ', 'シフォン', 'スフレ', 'ケーキ', 'スポンジ', 'バウム', 'バーム'],
@@ -5481,16 +5524,25 @@ const KEYWORD_MAP: Record<string, string[]> = {
   'ヘルシー': ['健康', 'ヘルシー', 'おから', 'グルテンフリー', 'プロテイン', 'グラノーラ', '低糖質', 'オーガニック', '無添加'],
   'サクサク': ['サクサク', 'サクッ', 'パイ', 'タルト', 'ビスケット', 'ラスク'],
   'ザクザク': ['ザクザク', 'ザクッ', 'ナッツ', 'グラノーラ', 'クランチ', 'アーモンド'],
-  'カリカリ': ['カリカリ', 'カリッ', 'かりんとう', '芋けんぴ', 'ッツェル'],
+  'カリカリ': ['カリカリ', 'カリッ', 'かりんとう', '芋けんぴ'],
   'パリパリ': ['パリパリ', 'パリッ', 'モナカ', '最中', 'チップス', 'せんべい', '煎餅'],
 };
 
 const expandKeywords = (words: string[]): string[] => {
   const expanded: string[] = [];
-  words.forEach(w => {
+  words.forEach(rawW => {
+    const w = rawW.trim();
     expanded.push(w);
+    
+    // チョコミント・ミントの場合は「チョコ」への誤拡張を厳密に防ぐ
+    if (w === 'チョコミント' || w.includes('チョコミント') || w === 'ミント') {
+      expanded.push(...KEYWORD_MAP['チョコミント']);
+      return;
+    }
+
     Object.keys(KEYWORD_MAP).forEach(key => {
-      if (w.includes(key) || key.includes(w)) {
+      if (key === 'チョコミント' || key === 'ミント') return;
+      if (w === key || (w.length > 1 && key.length > 1 && (w.includes(key) || key.includes(w)))) {
         expanded.push(...KEYWORD_MAP[key]);
       }
     });

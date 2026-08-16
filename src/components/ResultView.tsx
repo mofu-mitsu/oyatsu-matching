@@ -334,9 +334,40 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       // 1. フォールバックデータも正確な条件で9件ランダム取得
       const fallbacks = getFallbackItems(typeInfo.id, minP, maxP, flavors, allDislikes, 9);
 
+      const clientNonFoodKeywords = [
+        'ultra umai', 'umai series', 'スクイーズ', '消しゴム', 'けしごむ', 'ケシゴム', 'おもちゃ', '玩具',
+        'カプセルトイ', 'ガチャガチャ', 'ガチャ', 'がちゃ', 'カプセル', 'フィギュア', 'マスコット', 'プラモデル',
+        '食品サンプル', 'フェイクフード', 'フェイクスイーツ', 'サンプル', '模型', 'ミニチュア', '置物', 'オブジェ', 'ドールハウス',
+        '生地', '綿プリント生地', 'プリント生地', 'はぎれ', 'ハギレ', 'カットクロス', '布地', 'コットン', '麻', 'リネン',
+        '手芸', 'クラフト', 'パーツ', 'デコパーツ', 'レジン', 'シリコンモールド', 'モールド', '型紙', '資材',
+        'のぼり', 'のぼり旗', '旗', '看板', 'ポスター', '什器', '名入れ', 'ネコポス便 和菓子', 'ネコポス便 洋菓子',
+        'ピアス', 'イヤリング', 'ネックレス', 'リング', '指輪', 'ブレスレット', 'アクセサリー', 'アクセ', 'チャーム',
+        'キャンドル', '石鹸', 'せっけん', '入浴剤', 'シール', 'ステッカー', 'マステ', '文具', 'キーホルダー', 'アクスタ',
+        'コップ', 'マグカップ', 'お皿', 'プレート', 'スプーン', 'フォーク', 'ラッピング', '空箱', '紙袋',
+        'シャツ', 'パンツ', 'ソックス', '服', 'アパレル', 'カラコン', 'コンタクト', 'リップ', '化粧水', 'コスメ',
+        'スマホケース', 'ケース', 'カバー', 'ぬいぐるみ', '本', '雑誌', 'cd', 'dvd'
+      ];
+      const clientNonFoodShops = ['サインモール', '看板', '手芸', 'ナカムラ', 'グッズプロ', 'lucca', 'パーツ', '生地'];
+
+      // API アイテムのクレンジング
+      let cleanApiItems = apiItems.filter((item: any) => {
+        const text = `${item.itemName} ${item.itemCaption || ''}`.toLowerCase();
+        const shop = (item.shopName || '').toLowerCase();
+        if (clientNonFoodKeywords.some(kw => text.includes(kw.toLowerCase()))) return false;
+        if (clientNonFoodShops.some(kw => shop.includes(kw.toLowerCase()))) return false;
+
+        // チョコミント選択時は、タイトルや説明文にミント/mintが含まれない「普通のチョコ」を排除
+        if (flavors.some(f => f.includes('ミント') || f.includes('チョコミント'))) {
+          const hasMint = text.includes('ミント') || text.includes('mint') || text.includes('薄荷');
+          if (!hasMint) return false;
+        }
+
+        return true;
+      });
+
       // 2. APIからの取得結果がある場合
-      const combined: any[] = [...apiItems];
-      const seenUrls = new Set(apiItems.map((item: any) => item.itemUrl));
+      const combined: any[] = [...cleanApiItems];
+      const seenUrls = new Set(cleanApiItems.map((item: any) => item.itemUrl));
 
       // 3. Fallbackから補填して確実に合計9件にする
       for (const fb of fallbacks) {
@@ -347,29 +378,8 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         }
       }
 
-      // 最終ガード: 非食品（生地、布、のぼり旗、アクセ等）・予算・嫌いなものの最終フィルタ
+      // 最終ガード: 予算・嫌いなものの最終フィルタ
       let finalFiltered = combined;
-
-      const clientNonFoodKeywords = [
-        '生地', '綿プリント生地', 'プリント生地', 'はぎれ', 'ハギレ', 'カットクロス', '布地', 'コットン', '麻', 'リネン',
-        '手芸', 'クラフト', 'パーツ', 'デコパーツ', 'レジン', 'シリコンモールド', 'モールド', '型紙', '資材',
-        '食品サンプル', 'サンプル', 'フェイク', 'ミニチュア', '粘土', 'ビーズ',
-        'のぼり', 'のぼり旗', '旗', '看板', 'ポスター', '什器', '名入れ', 'ネコポス便 和菓子', 'ネコポス便 洋菓子',
-        'ピアス', 'イヤリング', 'ネックレス', 'リング', '指輪', 'ブレスレット', 'アクセサリー', 'アクセ', 'チャーム',
-        'キャンドル', '石鹸', 'せっけん', '入浴剤', 'シール', 'ステッカー', 'マステ', '文具', 'キーホルダー', 'アクスタ',
-        'コップ', 'マグカップ', 'お皿', 'プレート', 'スプーン', 'フォーク', 'ラッピング', '空箱', '紙袋',
-        'シャツ', 'パンツ', 'ソックス', '服', 'アパレル', 'カラコン', 'コンタクト', 'リップ', '化粧水', 'コスメ',
-        'スマホケース', 'ケース', 'カバー', 'ぬいぐるみ', 'フィギュア', '本', '雑誌', 'cd', 'dvd'
-      ];
-      const clientNonFoodShops = ['サインモール', '看板', '手芸', 'ナカムラ', 'グッズプロ', 'lucca', 'パーツ', '生地'];
-
-      finalFiltered = finalFiltered.filter((item: any) => {
-        const text = `${item.itemName} ${item.itemCaption || ''}`.toLowerCase();
-        const shop = (item.shopName || '').toLowerCase();
-        if (clientNonFoodKeywords.some(kw => text.includes(kw.toLowerCase()))) return false;
-        if (clientNonFoodShops.some(kw => shop.includes(kw.toLowerCase()))) return false;
-        return true;
-      });
 
       if (maxP > 0) {
         finalFiltered = finalFiltered.filter((item: any) => item.itemPrice <= maxP);
