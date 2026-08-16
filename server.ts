@@ -26,6 +26,16 @@ app.get('/api/health', (req, res) => {
 app.get('/api/rakuten/search', async (req, res) => {
   try {
     const rawKeyword = (req.query.keyword as string) || 'スイーツ ギフト';
+    // キーワードのサニタイズ（「・」などの記号除去やチョコミント正規化）
+    let cleanRawKeyword = (rawKeyword || '')
+      .replace(/ミント[・/]チョコミント/g, 'チョコミント')
+      .replace(/[・/、,()（）]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // 単語の重複を除去（例: 「チョコミント チョコミント クッキー」→「チョコミント クッキー」）
+    cleanRawKeyword = Array.from(new Set(cleanRawKeyword.split(/\s+/).filter(Boolean))).join(' ');
+
     const minPrice = req.query.minPrice ? Number(req.query.minPrice) : undefined;
     const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : undefined;
     const dislikes = req.query.dislikes ? (req.query.dislikes as string).split(',').filter(Boolean) : [];
@@ -39,13 +49,16 @@ app.get('/api/rakuten/search', async (req, res) => {
     const giftVibe = (req.query.giftVibe as string) || '';
 
     // 自由入力の好きなもの・キーワード（最優先）
-    const customFlavor = (req.query.customFlavor as string || '').trim();
+    const customFlavor = (req.query.customFlavor as string || '').trim().replace(/[・/、,()（）]/g, ' ');
 
     // 複数フレーバー（「ミント・チョコミント」等はクレンジング）
     let flavors = req.query.flavors ? (req.query.flavors as string).split(',').filter(Boolean) : [];
     flavors = flavors.map(f => {
-      if (f === 'ミント・チョコミント' || f === 'ミント') return 'チョコミント';
-      return f;
+      let clean = f.replace(/[・/、,()（）]/g, ' ').trim();
+      if (clean === 'ミント チョコミント' || clean === 'ミント' || clean.includes('チョコミント')) return 'チョコミント';
+      if (clean === '柑橘 レモン') return 'レモン';
+      if (clean === '梅 塩味') return '梅';
+      return clean;
     });
 
     if (customFlavor && !flavors.includes(customFlavor)) {
@@ -54,9 +67,6 @@ app.get('/api/rakuten/search', async (req, res) => {
     
     // 多すぎる単語を整理し段階的な検索候補を作成
     const keywordsToTry: string[] = [];
-
-    // 元のキーワードから単語を取り出し
-    const tokens = rawKeyword.split(/\s+/).filter(Boolean);
 
     // 0. 自由入力キーワードがあれば最優先！
     if (customFlavor) {
@@ -77,7 +87,7 @@ app.get('/api/rakuten/search', async (req, res) => {
       const primary = flavors[0];
       if (isSweetType) {
         if (primary === 'チョコミント' || primary.includes('ミント')) {
-          keywordsToTry.push('チョコミント チョコ', 'チョコミント クッキー', 'チョコミント スイーツ', 'チョコミント ケーキ', 'チョコミント アイス');
+          keywordsToTry.push('チョコミント スイーツ', 'チョコミント チョコ', 'チョコミント クッキー', 'チョコミント ケーキ', 'チョコミント サンド', 'チョコミント アイス');
         } else if (primary === 'チーズ') {
           keywordsToTry.push('チーズケーキ', 'チーズ クッキー', '濃厚 チーズ スイーツ');
         } else if (primary === '抹茶') {
@@ -94,18 +104,18 @@ app.get('/api/rakuten/search', async (req, res) => {
       }
     }
 
-    // 2. ギフト・高級指定がある場合
+    // 2. ユーザー指定のサニタイズ済み rawKeyword
+    if (cleanRawKeyword && !keywordsToTry.includes(cleanRawKeyword)) {
+      keywordsToTry.push(cleanRawKeyword);
+    }
+
+    // 3. ギフト・高級指定がある場合
     if (isGift || mood === 'ご褒美' || giftVibe === '高級感') {
       if (isSweetType) {
         keywordsToTry.push('高級 スイーツ ギフト 詰め合わせ', '洋菓子 ギフト 詰め合わせ', 'デパ地下 スイーツ ギフト');
       } else {
         keywordsToTry.push('高級 おつまみ ギフト 詰め合わせ', '珍味 ギフト 詰め合わせ');
       }
-    }
-
-    // 3. ユーザー指定の rawKeyword も活用（ただし不自然な複合語でなければ）
-    if (rawKeyword && !keywordsToTry.includes(rawKeyword)) {
-      keywordsToTry.push(rawKeyword);
     }
 
     // 4. タイプの大枠キーワード
@@ -115,8 +125,14 @@ app.get('/api/rakuten/search', async (req, res) => {
       keywordsToTry.push('おつまみ 珍味', 'おつまみ ギフト', 'おつまみ 詰め合わせ');
     }
 
-    // 重複除去
-    const uniqueKeywords = Array.from(new Set(keywordsToTry.filter(Boolean)));
+    // 重複除去 & 単語内重複除去
+    const uniqueKeywords = Array.from(
+      new Set(
+        keywordsToTry
+          .filter(Boolean)
+          .map(kw => Array.from(new Set(kw.replace(/[・/、,()（）]/g, ' ').split(/\s+/).filter(Boolean))).join(' '))
+      )
+    );
 
     let data: any = null;
     let successfulKeyword = '';

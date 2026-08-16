@@ -8,7 +8,40 @@ export interface FallbackItem extends RakutenItem {
 // APIがメンテナンス中などのエラー時に利用するフォールバックデータ
 export const FALLBACK_ITEMS: FallbackItem[] = [
   // --- Sweet (S) 系 ---
-  // チョコミント・ミント系スイーツ
+  // チョコミント・ミント系スイーツ（楽天市場人気アイテム）
+  {
+    itemName: 'チョコミントバターチーズサンド 5個入',
+    itemPrice: 2880,
+    itemUrl: 'https://item.rakuten.co.jp/runnycheese/10000091/',
+    affiliateUrl: 'https://hb.afl.rakuten.co.jp/ichiba/56610463.4aaa6b01.56610464.7ac5a73c/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Frunnycheese%2F10000091%2F&link_type=pict&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0Iiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MCwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9',
+    imageUrl: 'https://thumbnail.image.rakuten.co.jp/@0_mall/runnycheese/cabinet/10632994/chocomint1.jpg?_ex=240x240',
+    shopName: 'RUNNY CHEESE',
+    reviewAverage: 5.0,
+    reviewCount: 48,
+    targetTypes: ['STFW', 'SHFW', 'STCW', 'SHCW', 'STFJ', 'SHFJ', 'STCJ', 'SHCJ'],
+  },
+  {
+    itemName: 'チョコミント サンドセット フルーツサンド スイーツ',
+    itemPrice: 3980,
+    itemUrl: 'https://item.rakuten.co.jp/fruits-sand-three/v_43455117787344/',
+    affiliateUrl: 'https://hb.afl.rakuten.co.jp/ichiba/569e065e.44c8b57b.569e065f.5be7a51b/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Ffruits-sand-three%2Fv_43455117787344%2F&link_type=pict&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0Iiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MCwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9',
+    imageUrl: 'https://thumbnail.image.rakuten.co.jp/@0_mall/fruits-sand-three/cabinet/items1716189634/194387700671447725.jpg?_ex=240x240',
+    shopName: 'フルーツサンド専門店 THREE',
+    reviewAverage: 4.5,
+    reviewCount: 45,
+    targetTypes: ['STCW', 'SHCW', 'STFW', 'SHFW', 'STCJ', 'SHCJ'],
+  },
+  {
+    itemName: 'チョコミント 焼き菓子 スイーツ',
+    itemPrice: 800,
+    itemUrl: 'https://item.rakuten.co.jp/senka-land/4589947061368s-1/',
+    affiliateUrl: 'https://hb.afl.rakuten.co.jp/ichiba/569e05ca.5f218448.569e05cb.6b2824e0/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fsenka-land%2F4589947061368s-1%2F&link_type=pict&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0Iiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MCwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9',
+    imageUrl: 'https://thumbnail.image.rakuten.co.jp/@0_mall/senka-land/cabinet/08984957/compass1761705101.jpg?_ex=240x240',
+    shopName: 'センカランド',
+    reviewAverage: 4.5,
+    reviewCount: 30,
+    targetTypes: ['STFW', 'SHFW', 'STCW', 'SHCW', 'STFJ', 'SHFJ', 'STCJ', 'SHCJ'],
+  },
   {
     itemName: '贅沢生チョコミント ロールケーキ 1本 (爽快ミントクリーム＆ビターチョコ)',
     itemPrice: 2780,
