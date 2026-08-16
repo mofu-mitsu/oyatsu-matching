@@ -239,7 +239,7 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
     try {
       // 検索キーワードの構築（シンプルかつ的確に）
       const randomKwIndex = Math.floor(Math.random() * typeInfo.recommendedKeywords.length);
-      mainKw = typeInfo.recommendedKeywords[randomKwIndex] || typeInfo.recommendedKeywords[0] || 'スイーツ';
+      const baseTypeKw = typeInfo.recommendedKeywords[randomKwIndex] || typeInfo.recommendedKeywords[0] || 'スイーツ';
 
       const isSweet = typeInfo.code.startsWith('S');
 
@@ -247,13 +247,30 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
       if (customFlv.trim() && !customSearchKeyword.trim()) {
         mainKw = `${customFlv.trim()} ${isSweet ? 'スイーツ' : 'おつまみ'}`;
       } else if (flavors.length > 0 && !customSearchKeyword.trim()) {
-        // フレーバー指定があれば最優先単語として設定
-        let primaryFlavor = flavors[0];
+        // フレーバー指定がある場合、実在する王道お菓子ワードを生成
+        const rawFlv = flavors[0];
         if (isSweet) {
-          if (primaryFlavor === 'チーズ') primaryFlavor = 'チーズケーキ';
-          else if (primaryFlavor === 'ミント' || primaryFlavor === 'チョコミント' || primaryFlavor === 'ミント・チョコミント') primaryFlavor = 'チョコミント';
+          if (rawFlv === 'ミント' || rawFlv === 'チョコミント' || rawFlv === 'ミント・チョコミント') {
+            const chocoMintOptions = ['チョコミント チョコ', 'チョコミント クッキー', 'チョコミント スイーツ', 'チョコミント ケーキ', 'チョコミント アイス'];
+            mainKw = chocoMintOptions[Math.floor(Math.random() * chocoMintOptions.length)];
+          } else if (rawFlv === 'チーズ') {
+            const cheeseOptions = ['チーズケーキ', 'チーズ クッキー', '濃厚 チーズ スイーツ'];
+            mainKw = cheeseOptions[Math.floor(Math.random() * cheeseOptions.length)];
+          } else if (rawFlv === '抹茶') {
+            const matchaOptions = ['抹茶 スイーツ', '抹茶 ケーキ', '抹茶 チョコ', '抹茶 クッキー'];
+            mainKw = matchaOptions[Math.floor(Math.random() * matchaOptions.length)];
+          } else if (rawFlv === 'チョコ') {
+            const chocoOptions = ['チョコ スイーツ', 'ガトーショコラ', 'チョコレート ギフト', '濃厚 チョコ ケーキ'];
+            mainKw = chocoOptions[Math.floor(Math.random() * chocoOptions.length)];
+          } else if (rawFlv === 'いちご') {
+            const berryOptions = ['いちご スイーツ', '苺 ケーキ', 'いちご チョコ', 'いちご 焼き菓子'];
+            mainKw = berryOptions[Math.floor(Math.random() * berryOptions.length)];
+          } else {
+            mainKw = `${rawFlv} スイーツ`;
+          }
+        } else {
+          mainKw = `${rawFlv} おつまみ`;
         }
-        mainKw = `${primaryFlavor} ${mainKw}`;
       } else if (answers.textures && answers.textures.length > 0 && !customSearchKeyword.trim()) {
         // 食感キーワード（フレーバー指定がない場合のみ補助で付与）
         const textureKwMap: Record<string, string[]> = {
@@ -268,8 +285,12 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         };
         const matched = textureKwMap[answers.textures[0]];
         if (matched) {
-          mainKw = `${matched[0]} ${mainKw}`;
+          mainKw = `${matched[0]} ${baseTypeKw}`;
+        } else {
+          mainKw = baseTypeKw;
         }
+      } else {
+        mainKw = baseTypeKw;
       }
 
       // カスタムキーワード指定（再検索バー）があれば最優先
@@ -325,8 +346,30 @@ export const ResultView: React.FC<ResultViewProps> = ({ answers, onReset }) => {
         }
       }
 
-      // 最終ガード: 予算・嫌いなものの最終フィルタ
+      // 最終ガード: 非食品（生地、布、のぼり旗、アクセ等）・予算・嫌いなものの最終フィルタ
       let finalFiltered = combined;
+
+      const clientNonFoodKeywords = [
+        '生地', '綿プリント生地', 'プリント生地', 'はぎれ', 'ハギレ', 'カットクロス', '布地', 'コットン', '麻', 'リネン',
+        '手芸', 'クラフト', 'パーツ', 'デコパーツ', 'レジン', 'シリコンモールド', 'モールド', '型紙', '資材',
+        '食品サンプル', 'サンプル', 'フェイク', 'ミニチュア', '粘土', 'ビーズ',
+        'のぼり', 'のぼり旗', '旗', '看板', 'ポスター', '什器', '名入れ', 'ネコポス便 和菓子', 'ネコポス便 洋菓子',
+        'ピアス', 'イヤリング', 'ネックレス', 'リング', '指輪', 'ブレスレット', 'アクセサリー', 'アクセ', 'チャーム',
+        'キャンドル', '石鹸', 'せっけん', '入浴剤', 'シール', 'ステッカー', 'マステ', '文具', 'キーホルダー', 'アクスタ',
+        'コップ', 'マグカップ', 'お皿', 'プレート', 'スプーン', 'フォーク', 'ラッピング', '空箱', '紙袋',
+        'シャツ', 'パンツ', 'ソックス', '服', 'アパレル', 'カラコン', 'コンタクト', 'リップ', '化粧水', 'コスメ',
+        'スマホケース', 'ケース', 'カバー', 'ぬいぐるみ', 'フィギュア', '本', '雑誌', 'cd', 'dvd'
+      ];
+      const clientNonFoodShops = ['サインモール', '看板', '手芸', 'ナカムラ', 'グッズプロ', 'lucca', 'パーツ', '生地'];
+
+      finalFiltered = finalFiltered.filter((item: any) => {
+        const text = `${item.itemName} ${item.itemCaption || ''}`.toLowerCase();
+        const shop = (item.shopName || '').toLowerCase();
+        if (clientNonFoodKeywords.some(kw => text.includes(kw.toLowerCase()))) return false;
+        if (clientNonFoodShops.some(kw => shop.includes(kw.toLowerCase()))) return false;
+        return true;
+      });
+
       if (maxP > 0) {
         finalFiltered = finalFiltered.filter((item: any) => item.itemPrice <= maxP);
       }

@@ -41,8 +41,13 @@ app.get('/api/rakuten/search', async (req, res) => {
     // 自由入力の好きなもの・キーワード（最優先）
     const customFlavor = (req.query.customFlavor as string || '').trim();
 
-    // 複数フレーバー
+    // 複数フレーバー（「ミント・チョコミント」等はクレンジング）
     let flavors = req.query.flavors ? (req.query.flavors as string).split(',').filter(Boolean) : [];
+    flavors = flavors.map(f => {
+      if (f === 'ミント・チョコミント' || f === 'ミント') return 'チョコミント';
+      return f;
+    });
+
     if (customFlavor && !flavors.includes(customFlavor)) {
       flavors = [customFlavor, ...flavors];
     }
@@ -59,58 +64,55 @@ app.get('/api/rakuten/search', async (req, res) => {
         keywordsToTry.push(`${customFlavor} スイーツ`);
         keywordsToTry.push(`${customFlavor} ケーキ`);
         keywordsToTry.push(`${customFlavor} チョコ`);
+        keywordsToTry.push(`${customFlavor} クッキー`);
         keywordsToTry.push(`${customFlavor} 焼き菓子`);
-        keywordsToTry.push(`${customFlavor} お菓子`);
       } else {
         keywordsToTry.push(`${customFlavor} おつまみ`);
         keywordsToTry.push(`${customFlavor} 珍味`);
-        keywordsToTry.push(`${customFlavor} 食品`);
       }
     }
 
     // 1. フレーバー + 基本キーワード
     if (flavors.length > 0) {
       const primary = flavors[0];
-      let primaryFlavor = primary;
       if (isSweetType) {
-        if (primary === 'チーズ') primaryFlavor = 'チーズケーキ';
-        else if (primary === 'ミント' || primary === 'チョコミント' || primary === 'ミント・チョコミント') primaryFlavor = 'チョコミント スイーツ';
-      }
-      
-      const mainWord = tokens.find(t => !flavors.includes(t) && t !== '高級' && t !== 'ギフト' && t !== 'おつまみ') || (isSweetType ? 'スイーツ' : 'おつまみ');
-      if (isGift || mood === 'ご褒美' || giftVibe === '高級感') {
-        keywordsToTry.push(`${primaryFlavor} ギフト スイーツ`);
-        keywordsToTry.push(`高級 ${primaryFlavor}`);
-      }
-      keywordsToTry.push(`${primaryFlavor} ${mainWord}`);
-      if (primaryFlavor.includes('チョコミント')) {
-        keywordsToTry.push('チョコミント チョコ', 'チョコミント ケーキ', 'チョコミント 焼き菓子');
+        if (primary === 'チョコミント' || primary.includes('ミント')) {
+          keywordsToTry.push('チョコミント チョコ', 'チョコミント クッキー', 'チョコミント スイーツ', 'チョコミント ケーキ', 'チョコミント アイス');
+        } else if (primary === 'チーズ') {
+          keywordsToTry.push('チーズケーキ', 'チーズ クッキー', '濃厚 チーズ スイーツ');
+        } else if (primary === '抹茶') {
+          keywordsToTry.push('抹茶 スイーツ', '抹茶 ケーキ', '抹茶 チョコ', '抹茶 クッキー');
+        } else if (primary === 'チョコ') {
+          keywordsToTry.push('チョコ スイーツ', 'ガトーショコラ', 'チョコレート ギフト');
+        } else if (primary === 'いちご') {
+          keywordsToTry.push('いちご スイーツ', '苺 ケーキ', 'いちご チョコ', 'いちご 焼き菓子');
+        } else {
+          keywordsToTry.push(`${primary} スイーツ`, `${primary} お菓子`);
+        }
       } else {
-        keywordsToTry.push(`${primaryFlavor} お菓子`);
+        keywordsToTry.push(`${primary} おつまみ`, `${primary} 珍味`);
       }
     }
 
     // 2. ギフト・高級指定がある場合
     if (isGift || mood === 'ご褒美' || giftVibe === '高級感') {
       if (isSweetType) {
-        keywordsToTry.push('高級 スイーツ ギフト 詰め合わせ', '洋菓子 ギフト 詰め合わせ', '和菓子 高級 ギフト');
+        keywordsToTry.push('高級 スイーツ ギフト 詰め合わせ', '洋菓子 ギフト 詰め合わせ', 'デパ地下 スイーツ ギフト');
       } else {
         keywordsToTry.push('高級 おつまみ ギフト 詰め合わせ', '珍味 ギフト 詰め合わせ');
       }
     }
 
-    // 3. ユーザー指定キーワードから修飾語（高級など）を除いた2単語
-    const coreTokens = tokens.filter(t => t !== '高級' && t !== 'ギフト' && t !== 'おつまみ');
-    if (coreTokens.length > 0) {
-      keywordsToTry.push(coreTokens.slice(0, 2).join(' '));
-      keywordsToTry.push(coreTokens[0]);
+    // 3. ユーザー指定の rawKeyword も活用（ただし不自然な複合語でなければ）
+    if (rawKeyword && !keywordsToTry.includes(rawKeyword)) {
+      keywordsToTry.push(rawKeyword);
     }
 
     // 4. タイプの大枠キーワード
     if (isSweetType) {
-      keywordsToTry.push('洋菓子 焼き菓子', '和菓子 スイーツ', 'スイーツ');
+      keywordsToTry.push('洋菓子 焼き菓子', '和菓子 スイーツ', 'スイーツ 詰め合わせ');
     } else {
-      keywordsToTry.push('おつまみ 珍味', 'おつまみ ギフト', 'おつまみ');
+      keywordsToTry.push('おつまみ 珍味', 'おつまみ ギフト', 'おつまみ 詰め合わせ');
     }
 
     // 重複除去
@@ -120,11 +122,11 @@ app.get('/api/rakuten/search', async (req, res) => {
     let successfulKeyword = '';
 
     // 楽天ジャンルID設定
-    // 100227 = スイーツ・お菓子（S系は完全固定で雑貨・コスメ・カラコン・スマホケースを完全遮断）
-    // Y系は 100227 (スナック菓子・せんべい・ナッツ) または 食品全般
+    // 100227 = スイーツ・お菓子（S系は完全固定で雑貨・手芸・コスメ・カラコン・スマホケースを完全遮断）
+    // Y系は 100227 (スナック菓子・せんべい・ナッツ) または 食品全般(100371, 100227)
     const genreCandidates = isSweetType 
       ? ['100227'] 
-      : ['100227', '100371', '']; // Y系はまずお菓子・惣菜、なければ全体
+      : ['100227', '100371'];
 
     searchLoop: for (const genreId of genreCandidates) {
       for (const kw of uniqueKeywords) {
@@ -178,17 +180,20 @@ app.get('/api/rakuten/search', async (req, res) => {
 
     let items = data.Items.map((entry: any) => formatRakutenItem(entry.Item));
 
-    // 0. 非食品（アクセサリ、のぼり旗、看板、服、ケース、カバー、カラコン、コンタクト、ぬいぐるみ、雑貨、コスメ、美容液、サンプルなど）を徹底除外
+    // 0. 非食品（手芸生地・布・アクセサリ、のぼり旗、看板、服、ケース、カバー、カラコン、コンタクト、ぬいぐるみ、雑貨、コスメ、美容液、サンプルなど）を徹底除外
     const nonFoodKeywords = [
+      // 手芸・生地・布・資材（最重要ブロック）
+      '生地', '綿プリント生地', 'プリント生地', 'はぎれ', 'ハギレ', 'カットクロス', '布地', 'コットン', '麻', 'リネン',
+      'シーチング', 'オックス', 'ブロード', 'ダブルガーゼ', 'レース', 'リボン', '毛糸', '編み物', '刺繍', '手芸',
+      'クラフト', 'パーツ', 'デコパーツ', 'レジン', 'シリコンモールド', 'モールド', '型紙', '手作りキット', '資材',
+      '食品サンプル', 'サンプル', 'フェイク', 'フェイクスイーツ', 'ミニチュア', '粘土', 'クレイ', 'ビーズ', 'チャームパーツ',
+      // 看板・店舗用品・資材・印刷
+      'のぼり', 'のぼり旗', '旗', '幕', '横断幕', '看板', 'ポスター', 'パネル', 'ディスプレイ', 'pop', 'ポップ',
+      'サイン', '什器', 'チラシ', '販促', '名入れ', 'ネコポス便 和菓子', 'ネコポス便 洋菓子', 'ネコポス便 スイーツ', 'ネコポス便 アイス',
+      'ネコポス送料', 'メール便送料',
       // アクセサリー・装飾
       'ピアス', 'イヤリング', 'ネックレス', 'リング', '指輪', 'ブレスレット', 'アクセサリー', 'アクセ', 'チャーム',
       'ブローチ', 'ピンバッジ', 'バッジ', 'ヘアゴム', 'シュシュ', 'バレッタ', 'ペンダント', 'アンクレット',
-      // 看板・店舗用品・資材
-      'のぼり', 'のぼり旗', '旗', '幕', '横断幕', '看板', 'ポスター', 'パネル', 'ディスプレイ', 'pop', 'ポップ',
-      'サイン', '什器', 'チラシ', '販促', 'ネコポス便 和菓子', 'ネコポス便 洋菓子', 'ネコポス便 スイーツ', 'ネコポス便 アイス',
-      // 手芸・クラフト・サンプル・資材
-      '食品サンプル', 'サンプル', 'フェイク', 'フェイクスイーツ', 'ミニチュア', 'レジン', 'シリコンモールド', 'モールド',
-      '型紙', 'パーツ', 'ハンドメイド', '手芸', 'クラフト', '資材', '粘土', 'クレイ', 'ビーズ', 'デコパーツ',
       // 雑貨・日用品・文具
       'キャンドル', 'ろうそく', 'お香', 'アロマ', '石鹸', 'せっけん', 'ソープ', 'バスボム', '入浴剤', 'スライム',
       'シール', 'ステッカー', 'マスキングテープ', 'マステ', 'ノート', 'メモ帳', 'ボールペン', 'ペン', '文具', '文房具',
@@ -220,8 +225,8 @@ app.get('/api/rakuten/search', async (req, res) => {
       'ハローキティ', 'ちいかわ'
     ];
 
-    // 非食品を扱うショップ名の除外リスト（看板屋、アクセ屋など）
-    const nonFoodShopKeywords = ['サインモール', '看板', 'パーツ', 'ハンドメイド', 'アクセ', 'lucca', 'アパレル', 'コスメ'];
+    // 非食品を扱うショップ名の除外リスト（看板屋、手芸屋、アクセ屋、印刷屋など）
+    const nonFoodShopKeywords = ['サインモール', '看板', 'パーツ', 'ハンドメイド', 'アクセ', 'lucca', 'アパレル', 'コスメ', '手芸', 'ナカムラ', 'グッズプロ', '生地', 'ファブリック', 'ノベルティ'];
 
     items = items.filter((item: any) => {
       const text = `${item.itemName} ${item.itemCaption || ''}`.toLowerCase();
@@ -232,7 +237,7 @@ app.get('/api/rakuten/search', async (req, res) => {
         return false;
       }
 
-      // ショップ名が看板屋・雑貨屋などの場合除外
+      // ショップ名が看板屋・手芸屋などの場合除外
       if (nonFoodShopKeywords.some(kw => shop.includes(kw.toLowerCase()))) {
         return false;
       }

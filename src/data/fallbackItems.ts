@@ -10,7 +10,7 @@ export const FALLBACK_ITEMS: FallbackItem[] = [
   // --- Sweet (S) 系 ---
   // チョコミント・ミント系スイーツ
   {
-    itemName: '贅沢生チョコミント ロールケーキ 1本',
+    itemName: '贅沢生チョコミント ロールケーキ 1本 (爽快ミントクリーム＆ビターチョコ)',
     itemPrice: 2780,
     itemUrl: 'https://item.rakuten.co.jp/',
     affiliateUrl: 'https://hb.afl.rakuten.co.jp/ichiba/56610463.4aaa6b01.56610464.7ac5a73c/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2F&link_type=pict',
@@ -32,7 +32,7 @@ export const FALLBACK_ITEMS: FallbackItem[] = [
     targetTypes: ['STCW', 'SHCW', 'STCJ', 'SHCJ'],
   },
   {
-    itemName: 'ベルギー産カカオ使用 チョコミント サンドクッキー 8個入',
+    itemName: 'ベルギー産カカオ使用 チョコミント サンドクッキー 8個入 ギフトBOX',
     itemPrice: 1980,
     itemUrl: 'https://item.rakuten.co.jp/',
     affiliateUrl: 'https://hb.afl.rakuten.co.jp/ichiba/566108a9.2cc4600e.566108aa.3a028b5a/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2F&link_type=pict',
@@ -41,6 +41,28 @@ export const FALLBACK_ITEMS: FallbackItem[] = [
     reviewAverage: 4.6,
     reviewCount: 85,
     targetTypes: ['SHFW', 'STFW', 'SHCW', 'STCW'],
+  },
+  {
+    itemName: '北海道産生クリーム仕立て 濃厚チョコミント トリュフ 9個入',
+    itemPrice: 2160,
+    itemUrl: 'https://item.rakuten.co.jp/',
+    affiliateUrl: 'https://hb.afl.rakuten.co.jp/ichiba/566108a9.2cc4600e.566108aa.3a028b5a/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2F&link_type=pict',
+    imageUrl: 'https://images.unsplash.com/photo-1548848221-0c2e497ed557?auto=format&fit=crop&w=400&q=80',
+    shopName: '北国スイーツラボ',
+    reviewAverage: 4.8,
+    reviewCount: 110,
+    targetTypes: ['STCW', 'SHCW', 'STFW', 'SHFW'],
+  },
+  {
+    itemName: '焼き立て香ばしい チョコミント パウンドケーキ 1本',
+    itemPrice: 1680,
+    itemUrl: 'https://item.rakuten.co.jp/',
+    affiliateUrl: 'https://hb.afl.rakuten.co.jp/ichiba/56610463.4aaa6b01.56610464.7ac5a73c/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2F&link_type=pict',
+    imageUrl: 'https://images.unsplash.com/photo-1587314168485-3236d6710814?auto=format&fit=crop&w=400&q=80',
+    shopName: '森のベイクハウス',
+    reviewAverage: 4.7,
+    reviewCount: 64,
+    targetTypes: ['STFW', 'SHFW', 'STFJ', 'SHFJ'],
   },
   // 高価格帯 (7000〜10000円)
   {
